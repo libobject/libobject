@@ -14,14 +14,34 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "object.h"
-#include "alloc.h"
-#include "io_helper.h"
 #include <stdio.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
+#include "object.h"
+
+#define ALLOCATE(t) malloc(sizeof(t))
+
+#define ALLOCATE_TABLE(s, t) calloc(s, sizeof(t))
+
+#define REALLOCATE(p, t, s) realloc(p, (sizeof(t) * s))
+
+#define BUG_ON_NULL(o) do { \
+	if(o == NULL) { \
+		fprintf(stderr, "%s:%s:%d caught a NULL pointer!\n", __FILE__, \
+			__FUNCTION__, __LINE__); \
+		exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)
+
+#define PRINT_NL() do { \
+	fprintf(stdout, "\n"); \
+} \
+while(0) 
 
 #define ERROR_NO_RETURN(s) do { \
 	fprintf(stderr, "%s:%s:%d: %s\n", __FUNCTION__, __FILE__, __LINE__, s); \
