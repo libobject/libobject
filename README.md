@@ -3,3 +3,8 @@
 
 ##requirements
 - c99 compiler
+
+##compiling
+- autoreconf --install
+- ./configure
+- make
