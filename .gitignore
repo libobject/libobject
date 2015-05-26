@@ -1,6 +1,7 @@
 *.[ao]
 .deps
 INSTALL
+main
 Makefile
 Makefile.in
 config.guess
