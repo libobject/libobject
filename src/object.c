@@ -134,14 +134,90 @@ Object* newMap(uint32_t size)
 	return object;
 }
 
+static uint32_t mapIndexFromKey(String* key, uint32_t capacity)
+{
+	uint32_t hash = stringHash(key->value, key->length);
+	return (hash % capacity);
+}
+
+Object* copyObject(Object* o)
+{
+	if(o == NULL) return NULL;
+	Object* ret;
+	switch(O_TYPE(o)) {
+		case IS_LONG: 
+			ret = newLong(O_LVAL(o));
+		break;
+		case IS_DOUBLE:
+			ret = newDouble(O_DVAL(o));
+		break;
+		case IS_STRING: {
+			String* str = O_SVAL(o);
+			ret = newString(str->value);
+		}
+		break;
+		case IS_ARRAY: {
+			size_t i;
+			ret = newArray(O_AVAL(o)->capacity);
+			for(i = 0; i < O_AVAL(o)->size; i++) {
+				Object* value = arrayGet(o, i);
+				arrayPush(ret, value);
+			}
+		}
+		break;
+		case IS_MAP: {
+			uint32_t i;
+			ret = newMap(O_MVAL(o)->capacity);
+			for(i = 0; i < O_MVAL(o)->capacity; i++) {
+				Bucket* b = mapGetBucket(o, i);
+				while(b != NULL) {
+					Object* value = b->value;
+					mapInsert(ret, b->key->value, value);
+					b = b->next;
+				}
+			}
+		}
+		break;
+		default: 
+			printf("uh oh\n");
+			return NULL;
+		break;
+	}
+	return ret;
+}
+
+static void mapSafeResize(Map* map)
+{
+	Bucket** old_table = map->buckets;
+	uint32_t new_capacity = map->capacity * 2;
+	Bucket** new_table = ALLOCATE_TABLE(new_capacity, Bucket);
+	BUG_ON_NULL(new_table);
+	uint32_t i;
+	for(i = 0; i < map->capacity; i++) {
+		Bucket* b = old_table[i];
+		while(b != NULL) {
+			Bucket* bnext = b->next;
+			String* key = b->key;
+			uint32_t new_index = mapIndexFromKey(key, new_capacity);
+			b->next = new_table[new_index];
+			new_table[new_index] = b;
+			b = bnext;
+		}
+
+	}
+	free(old_table);
+	map->capacity = new_capacity;
+	map->buckets = new_table;
+}
+
 static void mapResize(Map* map)
 {
 	uint32_t newCapacity = map->capacity * 2;
 	uint32_t newSize     = 0;
 	Bucket** b = ALLOCATE_TABLE(newCapacity, Bucket);
 	BUG_ON_NULL(b);
-	
-	for(uint32_t i = 0; i < map->capacity; i++) {
+	uint32_t i;
+	for(i = 0; i < map->capacity; i++) {
 		Bucket* bucket = map->buckets[i];
 		if(bucket != NULL) {
 			while(bucket != NULL) {
@@ -184,20 +260,29 @@ uint32_t mapInsert(Object* map, const char* key, Object* value)
 {
 	BUG_ON_NULL(map);
 	if(O_MVAL(map)->capacity == O_MVAL(map)->size) {
-		mapResize(O_MVAL(map));
+		mapSafeResize(O_MVAL(map));
 	}
 
 	String* keyObject = newStringInstance(key);
 	uint32_t hash = stringHash(keyObject->value, keyObject->length);
 	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
 	Bucket* bucket = O_MVAL(map)->buckets[bucket_index];
-
+	Object* value_copy = copyObject(value);
+	if(value_copy == NULL) {
+		printf("value_copy == NULL\n");
+	}
 	while(bucket != NULL) {
 		if((bucket->hash == hash) && 
 			(keyObject->length == bucket->key->length) &&
 			((memcmp(bucket->key->value, keyObject->value, bucket->key->length)) == 0))
 		{
-			bucket->value = value;		
+			Object* oldValue = bucket->value;
+			/* free the old value */
+			objectSafeDestroy(oldValue, NULL);
+			bucket->value = value_copy;		
+			/* not used if it exists already */
+			free(keyObject->value);
+			free(keyObject);
 			return hash;
 		}
 		bucket = bucket->next;
@@ -206,7 +291,7 @@ uint32_t mapInsert(Object* map, const char* key, Object* value)
 	bucket = ALLOCATE(Bucket);
 	BUG_ON_NULL(bucket);
 	bucket->key = keyObject;
-	bucket->value = value;
+	bucket->value = value_copy;
 	bucket->hash = hash;
 	bucket->next = O_MVAL(map)->buckets[bucket_index];	
 	O_MVAL(map)->buckets[bucket_index] = bucket;
@@ -263,6 +348,7 @@ Object*	mapSearch(Object* map, const char* key)
 
 /*
  * @hash the hashed string value
+ * this doesn't work if two keys hash to the same value
  */
 Object*	mapGetValueByHash(Object* map, uint32_t hash)
 {
@@ -367,10 +453,10 @@ void arrayPush(Object* object, Object* value)
 
 	if(O_AVAL(object)->capacity == O_AVAL(object)->size) {
 		arrayResize(O_AVAL(object));
-		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value;
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = copyObject(value);
 		O_AVAL(object)->size++;
 	} else {
-		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value;
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = copyObject(value);
 		O_AVAL(object)->size++;
 	}
 }
@@ -561,72 +647,164 @@ void objectDump(Object* object, Object* last, size_t indent)
 	}
 }
 
-#ifdef O_DEBUG
-static void testArray()
+
+void objectDumpEx(Object* object, Object* last, size_t indent)
 {
-	Object* array = newArray(4);
-	arrayPush(array, newLong(100));
-	arrayPush(array, newLong(101));
-	arrayPush(array, newString("Fuck"));
-	arrayPush(array, newLong(102));
-	arrayPush(array, newLong(103));
-		
-	arrayPush(array, newLong(104));
-	arrayPush(array, newLong(105));
-	arrayPush(array, newLong(106));
-	arrayPush(array, newString("This is a test to test out a string that"));
-	arrayPush(array, newString("Fuck This Shit"));
-	arrayPush(array, newString("Ryan McCullagh is awesome"));
-	arrayPush(array, newString("Ryan McCullagh"));
-
-	Object* innerArray = newArray(8);
+	BUG_ON_NULL(object);
+	size_t i;
 	
-	arrayPush(innerArray, newLong(LONG_MAX));
-	arrayPush(innerArray, newLong(LONG_MAX));
-	arrayPush(innerArray, newLong(LONG_MAX));
-	arrayPush(innerArray, newLong(LONG_MAX));
+	switch(O_TYPE(object)) {
+		case IS_LONG:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_LONG));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)object);
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
+		case IS_STRING:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_STRING));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%zu", O_SVAL(object)->length);
+			fprintf(stdout, ")");
+			fprintf(stdout, " ");
+			fprintf(stdout, "%p", (void *)O_SVAL(object)->value);
+			fprintf(stdout, "\n");
 
-	Object* innerInnerArray = newArray(4);
-	arrayPush(innerInnerArray, newLong(LONG_MAX));
-	arrayPush(innerInnerArray, newLong(LONG_MAX));
-	arrayPush(innerInnerArray, newLong(LONG_MAX));
-	arrayPush(innerInnerArray, newLong(25));
-	arrayPush(innerInnerArray, newDouble(26.444));
-	
-	arrayPush(array, innerArray);
-	arrayPush(innerArray, innerInnerArray);
-	
-	OBJECT_DUMP(array);
-
-	objectEcho(3, array, innerArray, innerInnerArray);
-	PRINT_NL();
-
+		break;
+		case IS_ARRAY:
+			fprintf(stdout, "%s => %p", O_PRETTY_TYPE(IS_ARRAY), (void *)object);
+			fprintf(stdout, "(");
+			fprintf(stdout, "%zu", O_AVAL(object)->size);
+			fprintf(stdout, ")");
+			fprintf(stdout, " {");
+			fprintf(stdout, "\n");
+			for(i = 0; i < arraySize(object); i++) {
+				if(object == last) {
+					INDENT_LOOP(indent);
+					fprintf(stdout, "\t[Circular]\n");
+					INDENT_LOOP(indent);
+					fprintf(stdout, "}");
+					fprintf(stdout, "\n");
+					return;
+				} else {
+					INDENT_LOOP(indent);
+					fprintf(stdout, "\t[%zu] => ", i);
+					objectDumpEx(arrayGet(object, i), object,
+						indent + 1);
+				}
+			}
+			INDENT_LOOP(indent);
+			fprintf(stdout, "}");
+			fprintf(stdout, "\n");
+		break;
+		default:
+			fprintf(stdout, "[Object <none>]\n");
+		break;
+	}
 }
 
-static void testMap()
+void objectSafeDestroy(Object* current, Object* last)
 {
-	Object* map = newMap(8);
-	
-	mapInsert(map, "firstName", newString("Ryan"));
-	mapInsert(map, "lastName", newString("McCullagh"));
-	mapInsert(map, "age", newLong(24));
-
-	Object* array = newArray(4);
-
-	arrayMultiPush(array, newString("Programming"), newString("College"), newString("Music"));
-
-	/* WOW this could be bad if it wasn't for that recursion guard */	
-	arrayPush(array, array);
-
-	mapInsert(map, "hobbies", array);
-
-	OBJECT_DUMP(map);
+	if(current == NULL) {
+		printf("current == NULL\n");
+		return;
+	}
+	switch(O_TYPE(current)) {
+		case IS_LONG:
+		case IS_DOUBLE:
+			free(current);
+		break;
+		case IS_STRING:
+			free(O_SVAL(current)->value);
+			free(O_SVAL(current));
+			free(current);
+		break;
+		case IS_ARRAY: {
+			size_t i;
+			for(i = 0; i < arraySize(current); i++) {
+				if(current == last) {
+					printf("circular\n");
+					return;
+				} else {
+					Object* value = arrayGet(current, i);
+					objectSafeDestroy(value, current);
+				}
+			}
+			free(O_AVAL(current)->table);
+			free(O_AVAL(current));
+			free(current);
+		}
+		break;
+		case IS_MAP: {
+			uint32_t i;
+			for(i = 0; i < mapCapacity(current); i++) {
+				Bucket* b = mapGetBucket(current, i);
+				while(b != NULL) {
+					Bucket* bn = b->next;
+					String* key = b->key;
+					free(key->value);
+					free(key);
+					objectSafeDestroy(b->value, current);
+					free(b);
+					b = bn;
+				}
+			}
+			free(O_MVAL(current)->buckets);
+			free(O_MVAL(current));
+			free(current);
+		}
+		break;
+		default:
+			return;
+		break;
+	}
 }
-#endif
-#define str(s) #s
-#define DEBUG_TRACE(fn) do { \
-	fprintf(stdout, "*** BEGIN FUNCTION CALL '%s' ***\n", str(fn)); \
-	fn(); \
-	fprintf(stdout, "*** END FUNCTION CALL '%s'   ***\n", str(fn)); \
-} \
-while(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

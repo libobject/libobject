@@ -3,28 +3,24 @@
 
 int main(void)
 {
-
-	Object* map = newMap(2);
-	mapInsert(map, "name", newString("Ryan McCullagh"));
-	mapInsert(map, "test1", newString("Ryan"));
-
-	OBJECT_DUMP(map);	
-	mapInsert(map, "test", newString("Ryan"));
+	Object* array = newArray(4);
 	
-	OBJECT_DUMP(map);	
-	Object* found = mapSearch(map, "name");
-	if(found != NULL) {
-		printf("Found name.\n");
-		OBJECT_DUMP(found);
-	} else {
-		printf("name not found\n");
-	}	
+	Object* a = newLong(24);
+	Object* b = newLong(25);
+	arrayPush(array, a);
+	arrayPush(array, b);
 
-	// M/N = loadFactor; m = size, n = capacity
-	// maintain a .5 load factor	
-	float loadFactor = ((float)((O_MVAL(map)->size)) / ((float)(O_MVAL(map)->capacity)));
+	objectDestroy(a);
+	objectDestroy(b);
 
-	printf("%f\n", loadFactor);
+	OBJECT_DUMP_EX(array);
+
+	Object* map = newMap(8);
+	mapInsert(map, "digits", array);
+	objectDestroy(array);
+
+	OBJECT_DUMP(map);
+	objectDestroy(map);
 
 	return 0;
 }
