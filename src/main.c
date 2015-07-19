@@ -1,30 +1,29 @@
 #include <stdio.h>
 #include "object.h"
 
+#define HT_FOREACH(_ht) do { \
+	uint32_t _index; \
+	for(_index = 0; _index < (_ht)->capacity; _index++) { \
+		Bucket* _p = (_ht)->buckets[_index]; \
+		if(_p != NULL) { \
+		Bucket* _pp = _p; \
+		while(_pp != NULL) { \
+			Object* _value = _pp->value; \
+
+#define HT_FOREACH_VALUE(ht, _val) \
+	HT_FOREACH(ht) \
+	_val = _value; \
+	
+#define HT_FOREACH_END() \
+				_pp = _pp->next; \
+			} \
+		} \
+	} \
+} while(0)
+
 int main(void)
 {
 
-	Object* map = newMap(2);
-	mapInsert(map, "name", newString("Ryan McCullagh"));
-	mapInsert(map, "test1", newString("Ryan"));
-
-	OBJECT_DUMP(map);	
-	mapInsert(map, "test", newString("Ryan"));
-	
-	OBJECT_DUMP(map);	
-	Object* found = mapSearch(map, "name");
-	if(found != NULL) {
-		printf("Found name.\n");
-		OBJECT_DUMP(found);
-	} else {
-		printf("name not found\n");
-	}	
-
-	// M/N = loadFactor; m = size, n = capacity
-	// maintain a .5 load factor	
-	float loadFactor = ((float)((O_MVAL(map)->size)) / ((float)(O_MVAL(map)->capacity)));
-
-	printf("%f\n", loadFactor);
 
 	return 0;
 }
