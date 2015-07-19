@@ -1,4 +1,5 @@
 *.[ao]
+*.exe
 .deps
 INSTALL
 main
