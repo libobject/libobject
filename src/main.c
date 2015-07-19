@@ -21,7 +21,6 @@ int main(void)
 
 	OBJECT_DUMP(map);
 	objectDestroy(map);
->>>>>>> 216402f3b92819822cd3e126d2b310e1bc6d3610
 
 	return 0;
 }
