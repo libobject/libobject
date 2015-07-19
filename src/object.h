@@ -140,7 +140,15 @@ __arrayMultiPush(o, VA_NUM_ARGS(__VA_ARGS__), __VA_ARGS__)
  */
 void objectEcho(size_t length, ...);
 void objectDump(Object*, Object*, size_t);
+void objectDumpEx(Object*, Object*, size_t);
 
 #define OBJECT_DUMP(o) objectDump(o, NULL, 0)
+
+#define OBJECT_DUMP_EX(o) objectDumpEx(o, NULL, 0)
+
+void objectSafeDestroy(Object*, Object*);
+#define objectDestroy(o) objectSafeDestroy(o, NULL)
+
+Object* copyObject(Object*);
 
 #endif /* OBJECT_H */
