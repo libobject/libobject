@@ -7,6 +7,7 @@ int main(void)
 	
 	Object* a = newLong(24);
 	Object* b = newLong(25);
+	/* arrayPush copies the value into the vector */
 	arrayPush(array, a);
 	arrayPush(array, b);
 
@@ -19,7 +20,7 @@ int main(void)
 	mapInsert(map, "digits", array);
 	objectDestroy(array);
 
-	OBJECT_DUMP(map);
+	OBJECT_DUMP_EX(map);
 	objectDestroy(map);
 
 	return 0;

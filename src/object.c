@@ -697,6 +697,41 @@ void objectDumpEx(Object* object, Object* last, size_t indent)
 			fprintf(stdout, "}");
 			fprintf(stdout, "\n");
 		break;
+		case IS_MAP:
+			fprintf(stdout, "%s => %p", O_PRETTY_TYPE(IS_MAP), (void *)object);
+			fprintf(stdout, "(");
+			fprintf(stdout, "%zu", mapSize(object));
+			fprintf(stdout, ")");
+			fprintf(stdout, " {");
+			fprintf(stdout, "\n");
+			for(i = 0; i < mapCapacity(object); i++) {
+				Bucket* b = mapGetBucket(object, i);
+				if(b != NULL) {
+					Bucket* bb = b;
+					while(bb != NULL) {	
+						fprintf(stdout, "\t");
+						fprintf(stdout, "%s", 
+							bb->key->value);
+						fprintf(stdout, ": ");	
+				
+						if(object == last) {
+							fprintf(stdout,
+							"**RECURSION**\n");
+							INDENT_LOOP(indent);
+							fprintf(stdout, "}");
+							fprintf(stdout, "\n");
+							return;
+						}
+						objectDumpEx(bb->value, object,
+							indent + 1);	
+						bb = bb->next;
+					}
+				}		
+			}		
+			INDENT_LOOP(indent);
+			fprintf(stdout, "}");
+			fprintf(stdout, "\n");
+		break;
 		default:
 			fprintf(stdout, "[Object <none>]\n");
 		break;
@@ -755,56 +790,8 @@ void objectSafeDestroy(Object* current, Object* last)
 		}
 		break;
 		default:
+			printf("%s(): invalid object\n", __func__);
 			return;
 		break;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
