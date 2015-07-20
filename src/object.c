@@ -30,15 +30,6 @@
 
 #define REALLOCATE(p, t, s) realloc(p, (sizeof(t) * s))
 
-#define BUG_ON_NULL(o) do { \
-	if(o == NULL) { \
-		fprintf(stderr, "%s:%s:%d caught a NULL pointer!\n", __FILE__, \
-			__FUNCTION__, __LINE__); \
-		exit(EXIT_FAILURE); \
-	} \
-} \
-while(0)
-
 #define PRINT_NL() do { \
 	fprintf(stdout, "\n"); \
 } \
@@ -47,6 +38,15 @@ while(0)
 #define ERROR_NO_RETURN(s) do { \
 	fprintf(stderr, "%s:%s:%d: %s\n", __FUNCTION__, __FILE__, __LINE__, s); \
 	exit(1); \
+} \
+while(0)
+
+#define RETURN_ON_NULL(o) do { \
+	if(o == NULL) { \
+		fprintf(stderr, "%s():%s:%d caught a NULL pointer\n", __FILE__, \
+			__FUNCTION__, __LINE__); \
+		return NULL; \
+	} \
 } \
 while(0)
 
@@ -75,14 +75,15 @@ static Object*	newObject(ObjectType);
 static Map*	newMapInstance(uint32_t);
 static String*	newStringInstance(const char*);
 static Array*	newArrayInstance(size_t);
-static void	arrayResize(Array*);
+static int	arrayResize(Array*);
 static void	mapResize(Map*);
+static Object*	arrayRealGet(Array*, size_t);
 
 static Object* newObject(ObjectType type)
 {
 	Object* object = ALLOCATE(Object);
-	BUG_ON_NULL(object);
-	
+	RETURN_ON_NULL(object);
+
 	O_TYPE(object) = type;	
 	O_MRKD(object) = 0;
 
@@ -107,17 +108,14 @@ Object* newDouble(double value)
 
 static Map* newMapInstance(uint32_t size)
 {
-	if(size <= 1) {
-		ERROR_NO_RETURN("size must be greater than 1");
-	}
-
 	Map* map = ALLOCATE(Map);
 	BUG_ON_NULL(map);
 
 	map->capacity = size;
 	map->size = 0;
 	
-	Bucket** buckets = ALLOCATE_TABLE(size, Bucket);
+	size_t s = (size_t)size;
+	Bucket** buckets = ALLOCATE_TABLE(s, Bucket);
 	BUG_ON_NULL(buckets);
 
 	map->buckets = buckets;
@@ -160,7 +158,7 @@ Object* copyObject(Object* o)
 			size_t i;
 			ret = newArray(O_AVAL(o)->capacity);
 			for(i = 0; i < O_AVAL(o)->size; i++) {
-				Object* value = arrayGet(o, i);
+				Object* value = arrayRealGet(O_AVAL(o), i);
 				arrayPush(ret, value);
 			}
 		}
@@ -186,72 +184,122 @@ Object* copyObject(Object* o)
 	return ret;
 }
 
-static void mapSafeResize(Map* map)
+static int mapTryResize(Map* map)
 {
-	Bucket** old_table = map->buckets;
+	BUG_ON_NULL(map);
 	uint32_t new_capacity = map->capacity * 2;
-	Bucket** new_table = ALLOCATE_TABLE(new_capacity, Bucket);
-	BUG_ON_NULL(new_table);
+	size_t n = (size_t)new_capacity;
+	Bucket** new_table = ALLOCATE_TABLE(n, Bucket);
+	if(new_table == NULL) {
+		printf("%s(): failed to allocated %u bytes\n", __func__, new_capacity);
+		return 0;
+	}
 	uint32_t i;
+	Bucket** old_table = map->buckets;
 	for(i = 0; i < map->capacity; i++) {
 		Bucket* b = old_table[i];
 		while(b != NULL) {
-			Bucket* bnext = b->next;
+			Bucket* next = b->next;
 			String* key = b->key;
-			uint32_t new_index = mapIndexFromKey(key, new_capacity);
-			b->next = new_table[new_index];
-			new_table[new_index] = b;
-			b = bnext;
+			Object* value = b->value;
+			uint32_t new_index = b->hash % new_capacity;
+			Bucket* new_bucket = new_table[new_index];
+			uint32_t hash = b->hash;
+			while(new_bucket != NULL) {
+				if((new_bucket->hash == hash) && (key->length == new_bucket->key->length) &&
+					(memcmp(new_bucket->key->value, key->value, new_bucket->key->length) == 0)) 
+				{
+					
+					new_bucket->value = value;
+				}
+				new_bucket = new_bucket->next;
+			}
+			new_bucket = ALLOCATE(Bucket);
+			BUG_ON_NULL(new_bucket);
+			new_bucket->key = key;
+			new_bucket->value = value;
+			new_bucket->hash = hash;
+			new_bucket->next = new_table[new_index];
+			new_table[new_index] = new_bucket;
+			free(b);
+			b = next;
 		}
-
 	}
 	free(old_table);
-	map->capacity = new_capacity;
 	map->buckets = new_table;
+	map->capacity = new_capacity;
+	return 1;
 }
 
-static void mapResize(Map* map)
+static void mapRealDelete(Map* map, String* key, uint32_t hash)
 {
-	uint32_t newCapacity = map->capacity * 2;
-	uint32_t newSize     = 0;
-	Bucket** b = ALLOCATE_TABLE(newCapacity, Bucket);
-	BUG_ON_NULL(b);
-	uint32_t i;
-	for(i = 0; i < map->capacity; i++) {
-		Bucket* bucket = map->buckets[i];
-		if(bucket != NULL) {
-			while(bucket != NULL) {
-				String* key   = bucket->key;
-				Object* value = bucket->value;
-				uint32_t hash = stringHash(key->value, key->length);
-				uint32_t index = (hash % newCapacity);
-				Bucket* bb = b[index];
-				while(bb != NULL) {
-					if((bb->hash == hash) && 
-					 (key->length == bb->key->length) &&
-					 (memcmp(bb->key->value, key->value, bb->key->length) == 0)) {
-						bb->value = value;
-
+	uint32_t index = hash % map->capacity;
+	Bucket* b = map->buckets[index];
+	Bucket* head = map->buckets[index];
+	while(b != NULL) {
+		Bucket* next = b->next;
+		if((b->hash == hash) && 
+			(key->length == b->key->length) &&
+			((memcmp(b->key->value, key->value, b->key->length)) == 0))
+		{	
+			/* first node */
+			if(b == map->buckets[index]) { 
+				if(b->next == NULL) {
+					map->buckets[index] = NULL;
+					map->size = map->size-1;
+					free(b->key->value);
+					free(b->key);
+					objectSafeDestroy(b->value, NULL);
+					free(b);
+					return;
+				} else {
+					Bucket* bb = b->next;
+					if(bb == NULL) {
+						printf("bb == NULL\n");
 					}
-					bb = bb->next;
+					map->size = map->size-1;
+					free(b->key->value);
+					free(b->key);
+					objectSafeDestroy(b->value, NULL);
+					free(b);
+					map->buckets[index] = bb;
+					return;
 				}
-
-				bb = ALLOCATE(Bucket);
-				BUG_ON_NULL(bb);
-				bb->key = key;
-				bb->value = value;
-				bb->hash = hash;
-				bb->next = b[index];	
-				b[index] = bb;	
-				newSize++;
-				bucket = bucket->next;
+			} else {
+				/* get the element before the current element */
+				while(head->next != NULL && head->next != b) {
+					head = head->next;
+				}
+				head->next = head->next->next;
+				map->buckets[index] = head;
+				map->size = map->size-1;
+				free(b->key->value);
+				free(b->key);
+				objectSafeDestroy(b->value, NULL);
+				free(b);
+				return;
 			}
 		}
+		b = next;
 	}
-	map->buckets = b;
-	map->size = newSize;
-	map->capacity = newCapacity;	
 }
+
+void mapDelete(Object* object, const char* pkey)
+{
+	BUG_ON_NULL(object);
+	BUG_ON_NULL(pkey);
+	if(O_TYPE(object) != IS_MAP) {
+		printf("%s(): Object passed must be an instance of Map\n", __func__);
+		return;
+	}
+
+	String* key = newStringInstance(pkey);
+	uint32_t hash = stringHash(key->value, key->length);
+	mapRealDelete(O_MVAL(object), key, hash);
+	free(key->value);
+	free(key);
+}
+
 
 /*
  * @return the hashed value
@@ -259,18 +307,32 @@ static void mapResize(Map* map)
 uint32_t mapInsert(Object* map, const char* key, Object* value)
 {
 	BUG_ON_NULL(map);
-	if(O_MVAL(map)->capacity == O_MVAL(map)->size) {
-		mapSafeResize(O_MVAL(map));
+	if(O_TYPE(map) != IS_MAP) {
+		printf("%s(): Object passed must be an instance of Map\n", __func__);
+		return 0;
+	}
+	if(O_MVAL(map)->size >= O_MVAL(map)->capacity) {
+		int status;
+		if((status = mapTryResize(O_MVAL(map))) == 0) {
+			printf("%s(): failed to resize table\n", __func__);
+			return 0;		
+		} else {
+			#ifdef DEBUG
+			printf("%s(): resizing table\n", __func__);
+			#endif
+		}
+	}
+	
+	Object* value_copy = copyObject(value);
+	if(value_copy == NULL) {
+		printf("%s(): failed to copy object\n", __func__);
+		return 0;
 	}
 
 	String* keyObject = newStringInstance(key);
 	uint32_t hash = stringHash(keyObject->value, keyObject->length);
 	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
 	Bucket* bucket = O_MVAL(map)->buckets[bucket_index];
-	Object* value_copy = copyObject(value);
-	if(value_copy == NULL) {
-		printf("value_copy == NULL\n");
-	}
 	while(bucket != NULL) {
 		if((bucket->hash == hash) && 
 			(keyObject->length == bucket->key->length) &&
@@ -309,6 +371,9 @@ uint32_t mapSize(Object* object)
 uint32_t mapCapacity(Object* object)
 {
 	BUG_ON_NULL(object);
+	if(O_TYPE(object) != IS_MAP) {
+		return 0;
+	}
 	return O_MVAL(object)->capacity;
 }
 
@@ -323,7 +388,11 @@ Bucket* mapGetBucket(Object* object, uint32_t index)
 	
 	return map->buckets[index];
 }
-
+/*
+ * search the Map for a value with the key equal to key.
+ * return a COPY of the value if found, NULL if not
+ * the caller is resposible for freeing the returned value
+ */
 Object*	mapSearch(Object* map, const char* key)
 {
 	BUG_ON_NULL(map);
@@ -337,7 +406,7 @@ Object*	mapSearch(Object* map, const char* key)
 			(key_length == bucket->key->length) &&
 			((memcmp(bucket->key->value, key, bucket->key->length)) == 0))
 		{
-			return bucket->value;
+			return copyObject(bucket->value);
 		}
 
 		bucket = bucket->next;
@@ -408,16 +477,16 @@ Object* newFunction(void* ptr)
 
 static Array* newArrayInstance(size_t size)
 {
-	if(size <= 1) {
-		ERROR_NO_RETURN("size must be greater than 1");
-	}
-	
 	Array* array = ALLOCATE(Array);
-	BUG_ON_NULL(array);
+	RETURN_ON_NULL(array);
 	
 	Object** table = ALLOCATE_TABLE(size, Object);
-	BUG_ON_NULL(table);
-	
+	if(table == NULL) {
+		free(array);
+		printf("%s(): failed to allocate %zu bytes for array->table\n", __func__, size);
+		return NULL;
+	}
+
 	array->capacity = size;
 	array->size = 0;
 	array->nextIndex = 0;
@@ -426,59 +495,91 @@ static Array* newArrayInstance(size_t size)
 	return array;
 }
 
-static void arrayResize(Array* array)
-{
-        BUG_ON_NULL(array);
-
-	size_t newSize = array->capacity *= 2;
-
-        array->capacity = newSize;
-	array->table = REALLOCATE(array->table, Object, newSize);
-	
-	BUG_ON_NULL(array->table);
-}
-
 Object* newArray(size_t size)
 {
 	Object* object = newObject(IS_ARRAY);
+	if(object == NULL) {
+		printf("%s(): newObject() returned NULL\n", __func__);
+		return NULL;
+	}
+	
 	Array* array = newArrayInstance(size);
+	if(array == NULL) {
+		free(object);
+		printf("%s(): newArrayInstance() returned NULL\n", __func__);
+		return NULL;
+	}
 	O_AVAL(object) = array;
 	
 	return object;
 }
 
+static int arrayResize(Array* array)
+{
+	if(array == NULL) {
+		printf("%s(): passing NULL pointer not allowed\n", __func__);
+		return 0;
+	}
+
+	size_t new_capacity = array->capacity * 2;
+	
+	Object** new_table = REALLOCATE(array->table, Object, new_capacity);
+      	if(new_table == NULL) {
+		printf("%s(): failed to reallocate %zu bytes\n", __func__, new_capacity);
+		return 0;
+	}	
+
+	array->capacity = new_capacity;
+	array->table = new_table;
+	return 1;
+}
+
 void arrayPush(Object* object, Object* value)
 {
 	BUG_ON_NULL(object);
+	
+	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
+		return;		
+	}
+
+	Object* value_copy = copyObject(value);
+	if(value_copy == NULL) {
+		printf("%s(): failed to push value, copyObject returned NULL\n", __func__);
+		return;
+	}
 
 	if(O_AVAL(object)->capacity == O_AVAL(object)->size) {
-		arrayResize(O_AVAL(object));
-		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = copyObject(value);
+		if(!arrayResize(O_AVAL(object))) {
+			objectDestroy(value_copy);
+			return;
+		}
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value_copy;
 		O_AVAL(object)->size++;
 	} else {
-		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = copyObject(value);
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value_copy;
 		O_AVAL(object)->size++;
 	}
 }
-
-size_t arrayPop(Object* object, Object** ret)
+/*
+ * return a pointer to value at index i
+ */
+static Object* arrayRealGet(Array* array, size_t index)
 {
-	if(O_AVAL(object)->nextIndex == 0) {
-		*ret = NULL;
-		return 0;
-	} else {
-		O_AVAL(object)->nextIndex--;	
-		*ret = O_AVAL(object)->table[O_AVAL(object)->nextIndex];
-		return O_AVAL(object)->nextIndex;
-	}
+	return array->table[index];
 }
 
 Object* arrayGet(Object* object, size_t index)
 {
 	BUG_ON_NULL(object);
 
-	if(index < O_AVAL(object)->capacity) {
-		return O_AVAL(object)->table[index];
+	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
+		return NULL;		
+	}
+
+	if(index < O_AVAL(object)->size) {
+		return copyObject(arrayRealGet(O_AVAL(object), index));
 	}
 	
 	return NULL;
@@ -487,22 +588,13 @@ Object* arrayGet(Object* object, size_t index)
 size_t arraySize(Object* object)
 {
 	BUG_ON_NULL(object);
-	return O_AVAL(object)->size;
-}
-
-void __arrayMultiPush(Object* object, size_t length, ...)
-{
-	BUG_ON_NULL(object);
-	va_list args;
-	va_start(args, length);
 	
-	for(size_t i = 0; i < length; i++) {
-		Object* value = va_arg(args, Object*);
-		BUG_ON_NULL(value);
-		arrayPush(object, value);
+	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
+		return 0;		
 	}
-
-	va_end(args);
+	
+	return O_AVAL(object)->size;
 }
 
 void objectEcho(size_t length, ...)
@@ -598,7 +690,7 @@ void objectDump(Object* object, Object* last, size_t indent)
 				} else {
 					INDENT_LOOP(indent);
 					fprintf(stdout, "\t[%zu] => ", i);
-					objectDump(arrayGet(object, i), object,
+					objectDump(arrayRealGet(O_AVAL(object), i), object,
 						indent + 1);
 				}
 			}
@@ -606,10 +698,11 @@ void objectDump(Object* object, Object* last, size_t indent)
 			fprintf(stdout, "}");
 			fprintf(stdout, "\n");
 		break;
-		case IS_MAP:
+		case IS_MAP: {
+			uint32_t i;
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_MAP));
 			fprintf(stdout, "(");
-			fprintf(stdout, "%zu", mapSize(object));
+			fprintf(stdout, "%u", mapSize(object));
 			fprintf(stdout, ")");
 			fprintf(stdout, " {");
 			fprintf(stdout, "\n");
@@ -640,6 +733,7 @@ void objectDump(Object* object, Object* last, size_t indent)
 			INDENT_LOOP(indent);
 			fprintf(stdout, "}");
 			fprintf(stdout, "\n");
+		}
 		break;
 		default:
 			fprintf(stdout, "[Object <none>]\n");
@@ -689,7 +783,7 @@ void objectDumpEx(Object* object, Object* last, size_t indent)
 				} else {
 					INDENT_LOOP(indent);
 					fprintf(stdout, "\t[%zu] => ", i);
-					objectDumpEx(arrayGet(object, i), object,
+					objectDumpEx(arrayRealGet(O_AVAL(object), i), object,
 						indent + 1);
 				}
 			}
@@ -697,15 +791,16 @@ void objectDumpEx(Object* object, Object* last, size_t indent)
 			fprintf(stdout, "}");
 			fprintf(stdout, "\n");
 		break;
-		case IS_MAP:
+		case IS_MAP: {
 			fprintf(stdout, "%s => %p", O_PRETTY_TYPE(IS_MAP), (void *)object);
 			fprintf(stdout, "(");
-			fprintf(stdout, "%zu", mapSize(object));
+			fprintf(stdout, "%u", mapSize(object));
 			fprintf(stdout, ")");
 			fprintf(stdout, " {");
 			fprintf(stdout, "\n");
-			for(i = 0; i < mapCapacity(object); i++) {
-				Bucket* b = mapGetBucket(object, i);
+			uint32_t ii;
+			for(ii = 0; ii < mapCapacity(object); ii++) {
+				Bucket* b = mapGetBucket(object, ii);
 				if(b != NULL) {
 					Bucket* bb = b;
 					while(bb != NULL) {	
@@ -731,6 +826,7 @@ void objectDumpEx(Object* object, Object* last, size_t indent)
 			INDENT_LOOP(indent);
 			fprintf(stdout, "}");
 			fprintf(stdout, "\n");
+		}
 		break;
 		default:
 			fprintf(stdout, "[Object <none>]\n");
@@ -761,7 +857,7 @@ void objectSafeDestroy(Object* current, Object* last)
 					printf("circular\n");
 					return;
 				} else {
-					Object* value = arrayGet(current, i);
+					Object* value = arrayRealGet(O_AVAL(current), i);
 					objectSafeDestroy(value, current);
 				}
 			}

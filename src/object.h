@@ -109,6 +109,7 @@ uint32_t	mapCapacity(Object*);
 Bucket*		mapGetBucket(Object*, uint32_t);
 Object*		mapSearch(Object*, const char*);
 Object*		mapGetValueByHash(Object*, uint32_t);
+void		mapDelete(Object*, const char*);
 /*
  * Public API methods for String
  */
@@ -122,18 +123,13 @@ Object*		newFunction(void*);
  */
 Object*		newArray(size_t);
 void		arrayPush(Object*, Object*);
-size_t		arrayPop(Object*, Object**);
 Object*		arrayGet(Object* object, size_t);
 size_t		arraySize(Object*);
-void		__arrayMultiPush(Object*, size_t, ...);
 
 uint32_t stringHash(const char* source, size_t length);
 
 #define VA_NUM_ARGS(...) VA_NUM_ARGS_IMPL(__VA_ARGS__, 6,5,4,3,2,1)
 #define VA_NUM_ARGS_IMPL(_1,_2,_3,_4,_5,_6,N,...) N
-
-#define arrayMultiPush(o, ...) \
-__arrayMultiPush(o, VA_NUM_ARGS(__VA_ARGS__), __VA_ARGS__)
 
 /*
  * Public debugging methods
@@ -150,5 +146,86 @@ void objectSafeDestroy(Object*, Object*);
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 
 Object* copyObject(Object*);
+
+#define BUG_ON_NULL(o) do { \
+	if(o == NULL) { \
+		fprintf(stderr, "%s:%s:%d caught a NULL pointer!\n", __FILE__, \
+			__FUNCTION__, __LINE__); \
+		exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)
+
+#define ARRAY_FOREACH(_ar) do { \
+	size_t _i; \
+	for(_i = 0; _i < arraySize(_ar); _i++) { \
+		Object* _value = arrayGet(_ar, _i); \
+
+#define ARRAY_FOREACH_VALUE(_ar, _val) \
+	ARRAY_FOREACH(_ar) \
+	_val = _value; \
+
+#define ARRAY_ENUMERATE(_ar, _in, _val) \
+	ARRAY_FOREACH(_ar) \
+	_in = _i; \
+	_val = _value; \
+
+#define ARRAY_FOREACH_END() \
+	} \
+} while(0)
+
+#define ARRAY_ENUMERATE_END() \
+	} \
+} while(0)
+
+#define MAP_FOREACH(_ht) do { \
+	uint32_t _index; \
+	for(_index = 0; _index < mapCapacity(_ht); _index++) { \
+		Bucket* _b = (O_MVAL(_ht))->buckets[_index]; \
+		if(_b != NULL) { \
+			while(_b != NULL) { \
+				Bucket* _next = _b->next; \
+				Object* _value = copyObject(_b->value); \
+				Object* _key = newString(_b->key->value); \
+
+#define MAP_FOREACH_KEY_VALUE(_ht, _k, _val) \
+	HT_FOREACH(_ht) \
+	_k = _key; \
+	_val = _value; \
+
+#define MAP_FOREACH_END() \
+				_b = _next; \
+			} \
+		} \
+	} \
+} while(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif /* OBJECT_H */
