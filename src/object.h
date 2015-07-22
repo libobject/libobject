@@ -45,6 +45,8 @@ extern const char *const ObjectPrettyTypeLiteral[];
 #define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
  
 typedef struct String {
+	uint32_t	hash;
+	uint32_t	_notUsed;
 	size_t		length;
 	char*		value;
 } String;
@@ -61,12 +63,22 @@ typedef struct Bucket {
 	Object*		value;
 	int		__notUsed;
 	uint32_t	hash;
+/* These two pointers are used for collision resolution 
+ * Using these shows the structure of the unordered map
+ * A singly linked list for collision resolution. 
+ */
 	struct 		Bucket* next;
+
+/* These pointers are used to traverse the list in order from beggining, or from the end */
+	struct		Bucket* iPrev;
+	struct		Bucket* iNext;
 } Bucket;
 
 typedef struct Map {
 	uint32_t	capacity;
 	uint32_t	size;
+	Bucket*		first;
+	Bucket*		last;
 	Bucket**	buckets;
 } Map;
 
@@ -76,6 +88,7 @@ typedef struct Map {
 struct Object {
 	ObjectType	type;
 	int		marked;
+	char* 		(*toString)(Object*);
 	union {
 		long 		longValue;
 		double 		doubleValue;
@@ -108,7 +121,6 @@ uint32_t	mapSize(Object*);
 uint32_t	mapCapacity(Object*);
 Bucket*		mapGetBucket(Object*, uint32_t);
 Object*		mapSearch(Object*, const char*);
-Object*		mapGetValueByHash(Object*, uint32_t);
 void		mapDelete(Object*, const char*);
 /*
  * Public API methods for String
@@ -145,6 +157,8 @@ void objectDumpEx(Object*, Object*, size_t);
 void objectSafeDestroy(Object*, Object*);
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 
+void objectDestruct(void*);
+
 Object* copyObject(Object*);
 
 #define BUG_ON_NULL(o) do { \
@@ -178,25 +192,33 @@ while(0)
 	} \
 } while(0)
 
-#define MAP_FOREACH(_ht) do { \
-	uint32_t _index; \
-	for(_index = 0; _index < mapCapacity(_ht); _index++) { \
-		Bucket* _b = (O_MVAL(_ht))->buckets[_index]; \
-		if(_b != NULL) { \
-			while(_b != NULL) { \
-				Bucket* _next = _b->next; \
-				Object* _value = copyObject(_b->value); \
-				Object* _key = newString(_b->key->value); \
+#define MAP_FOREACH(_ht, _start, _iter) do { \
+	if(_ht == NULL) { \
+		break; \
+	} \
+	if(O_TYPE(_ht) != IS_MAP) { \
+		fprintf(stderr, "MAP_FOREACH: Object instance is not an instance of Map\n"); \
+		break; \
+	} \
+	Bucket* _b = O_MVAL(_ht)->_start; \
+	while(_b != NULL) { \
+		Bucket* _next = _b->iNext; \
+		Object* _value = copyObject(_b->value); \
+		Object* _key = newString(_b->key->value); \
 
 #define MAP_FOREACH_KEY_VALUE(_ht, _k, _val) \
-	HT_FOREACH(_ht) \
+	MAP_FOREACH(_ht, first, iNext) \
 	_k = _key; \
 	_val = _value; \
 
+#define MAP_FOREACH_KEY_VALUE_REVERSE(_ht, _k, _val) \
+	MAP_FOREACH(_ht, last, iPrev) \
+	_k = _key; \
+	_val = _value; \
+
+
 #define MAP_FOREACH_END() \
-				_b = _next; \
-			} \
-		} \
+		_b = _next; \
 	} \
 } while(0)
 
