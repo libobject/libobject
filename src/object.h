@@ -99,6 +99,12 @@ struct Object {
 	} value;	
 };
 
+typedef struct MutableString {
+	size_t length;
+	size_t capacity;
+	char* value;
+} MutableString;
+
 #define O_TYPE(o) (o)->type
 #define O_MRKD(o) (o)->marked
 #define O_LVAL(o) (o)->value.longValue
@@ -126,6 +132,8 @@ void		mapDelete(Object*, const char*);
  * Public API methods for String
  */
 Object*		newString(const char*);
+Object*		stringSplit(const char*, char);
+
 /*
  * Public API methods for Function
  */
