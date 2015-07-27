@@ -19,14 +19,22 @@
 
 #include "object.h"
 
+typedef void(*ObjectMM_Destructor)(void*);
 typedef struct ObjectMMNode {
+	size_t			value_freed;
 	size_t			ref_count;
 	Object* 		value;
+	ObjectMM_Destructor     free;
 	struct ObjectMMNode* 	next;
 } ObjectMMNode;
 
-void ObjectMM_Free(ObjectMMNode**);
-Object* ObjectMM_Push(ObjectMMNode**, Object*);
+void MM_Run();
+void ObjectMM_Init();
+void ObjectMM_Free();
+Object* ObjectMM_Push(Object*);
+Object* ObjectMM_Push_Ex(ObjectMMNode**, Object*);
+ObjectMMNode* MM_Push(Object* value);
+void MM_DECREF(ObjectMMNode*);
 
 #endif
 
