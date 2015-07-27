@@ -65,5 +65,7 @@ int main(void)
 
 	ObjectMM_Free();
 
+	Object* split = stringSplit("This is a string", ' ');
+	OBJECT_DUMP(split);
 	return 0;
 }
