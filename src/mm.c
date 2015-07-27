@@ -33,7 +33,9 @@ void ObjectMM_Init(ObjectMM_Destructor defaultDestructor)
 static void ObjectMM_API_Free(ObjectMMNode* node)
 {
 	while(node != NULL) {
+#ifdef DEBUG
 		printf("%s(): freeing ObjectMMNode:%p\n", __func__, (void *)(node));
+#endif
 		ObjectMMNode* next = node->next;
 		//Object* value = node->value;
 		//node->free(value);	
@@ -59,7 +61,9 @@ static void MM_API_Run(ObjectMMNode* node)
 		ObjectMMNode* next = node->next;
 		Object* value = node->value;
 		if(node->ref_count <= 0 && !node->value_freed) {
+#ifdef DEBUG
 			printf("%s(): freeing Object:%p,ref_count=%zu\n", __func__, (void *)value, node->ref_count);
+#endif
 			node->free(value);
 			node->value_freed = 1;	
 		}
