@@ -189,7 +189,7 @@ while(0)
 				Object* _key = newString(_b->key->value); \
 
 #define MAP_FOREACH_KEY_VALUE(_ht, _k, _val) \
-	HT_FOREACH(_ht) \
+	MAP_FOREACH(_ht) \
 	_k = _key; \
 	_val = _value; \
 
