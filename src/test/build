@@ -1,0 +1,5 @@
+#!/bin/bash
+gcc ../murmurhash3.c ../object.c stringSplit.c -o stringSplit
+echo "*** TEST BEGIN ***"
+./stringSplit
+echo "*** TEST END   ***"
