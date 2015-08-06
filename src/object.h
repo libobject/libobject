@@ -146,6 +146,7 @@ void objectSafeDestroy(Object*, Object*);
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 
 Object* copyObject(Object*);
+Object* stringSplit(const char*, char);
 
 #define BUG_ON_NULL(o) do { \
 	if(o == NULL) { \
@@ -199,33 +200,5 @@ while(0)
 		} \
 	} \
 } while(0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif /* OBJECT_H */
