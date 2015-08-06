@@ -17,16 +17,15 @@
 
 OBJECT_TEST void Assert_stringSplit_Returns_Empty_Array_When_First_Argument_Is_Length_0()
 {
-        OBJECT_ASSERT((arraySize(stringSplit("", ' ')) == 0), "stringSplit");
-        OBJECT_TEST_PASS("stringSplit");
+        
+	OBJECT_ASSERT((arraySize(stringSplit("", ' ')) == 0), "stringSplit");
+	OBJECT_TEST_PASS("stringSplit");
 }
 
 int main()
 {
-
         Assert_stringSplit_Returns_Empty_Array_When_First_Argument_Is_Length_0();
 
         return 0;
-
 }
 
