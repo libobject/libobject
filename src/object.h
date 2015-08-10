@@ -123,6 +123,7 @@ extern LIBOBJECT_API void	arrayPush(Object*, Object*);
 extern LIBOBJECT_API Object*	arrayGet(Object* object, size_t);
 extern LIBOBJECT_API size_t	arraySize(Object*);
 extern LIBOBJECT_API uint32_t 	stringHash(const char* source, size_t length);
+extern LIBOBJECT_API Object*	stringSplit(const char*, char);
 extern LIBOBJECT_API void 	objectEcho(Object*);
 extern LIBOBJECT_API void 	objectDump(Object*, Object*, size_t);
 extern LIBOBJECT_API void 	objectDumpEx(Object*, Object*, size_t);
@@ -187,33 +188,5 @@ while(0)
 		} \
 	} \
 } while(0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif /* OBJECT_H */

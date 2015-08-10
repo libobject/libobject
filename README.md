@@ -12,6 +12,10 @@ returns NULL. If the NULL check is false, then newArray will call newArrayInstan
 If it returns NULL, it will free the return value of `newObject`, and finally
 return NULL. The caller should the return value of newArray.
 
+##ownership
+Ownership of allocated objects belongs to the caller. Data structures such as Map, Array, all make copies
+of the value argument.
+
 ##requirements
 - c99 compiler
 

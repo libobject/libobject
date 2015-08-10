@@ -24,6 +24,12 @@
 #include "murmurhash3.h"
 #include "object.h"
 
+typedef struct MutableString {
+        size_t length;
+        size_t capacity;
+        char* value;
+} MutableString;
+
 #define ALLOCATE(t) malloc(sizeof(t))
 
 #define ALLOCATE_TABLE(s, t) calloc(s, sizeof(t))
@@ -502,8 +508,8 @@ static String* newStringInstance(const char* source)
 	string->length = length;
 	string->value = malloc(sizeof(char) * length + 1);
 	BUG_ON_NULL(string->value);
-
-	for(size_t i = 0; i < length; i++) {
+	size_t i;
+	for(i = 0; i < length; i++) {
 		string->value[i] = source[i];
 	}
 
@@ -740,7 +746,8 @@ LIBOBJECT_API void objectEcho(Object* object)
 }
 
 #define INDENT_LOOP(c) do { \
-	for(size_t i = 0; i < c; i++) { \
+	size_t i; \
+	for(i = 0; i < c; i++) { \
 		fprintf(stdout, "\t"); \
 	} \
 } \
@@ -995,3 +1002,79 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 		break;
 	}
 }
+static MutableString* newMutableString()
+{
+        MutableString* ms;
+        if((ms = malloc(sizeof(MutableString))) == NULL) {
+                return NULL;
+        }
+        ms->length = 0;
+        ms->capacity = 16;
+        if((ms->value = malloc(ms->capacity)) == NULL) {
+                free(ms);
+                return NULL;
+        }
+        ms->value[ms->length] = '\0';
+        return ms;
+}
+
+static void mutableStringAppend(MutableString* ms, const char value)
+{
+        size_t part_length = 1;
+        size_t i;
+        size_t current_position;
+        size_t new_length = part_length + ms->length;
+        current_position = ms->length;
+
+        if(new_length >= ms->capacity) {
+                while(new_length >= ms->capacity) {
+                        ms->capacity *=2;
+                        if((ms->value = realloc(ms->value, ms->capacity)) == NULL) {
+                                return;
+                        }
+                }
+        }
+        for(i = 0; i < part_length; i++) {
+                ms->value[current_position++] = value;
+        }
+        ms->length = new_length;
+        ms->value[current_position] = '\0';
+}
+
+static void mutableStringReset(MutableString* ms)
+{
+        ms->length = 0;
+        memset(ms->value, '\0', ms->capacity);
+}
+
+static void mutableStringFree(MutableString* ms)
+{
+        free(ms->value);
+        free(ms);
+}
+
+LIBOBJECT_API Object* stringSplit(const char* source, char sep)
+{
+        BUG_ON_NULL(source);
+        size_t source_len = strlen(source);
+        if(!source_len)
+                return newArray(2);
+
+        MutableString* key = newMutableString();
+        Object* array = newArray(2);
+        size_t i;
+        for(i = 0; i < source_len; i++) {
+                if(source[i] == sep) {
+                        if(i != 0) {
+                                arrayPush(array, newString(key->value));
+                                mutableStringReset(key);
+                        }
+                        continue;
+                }
+                mutableStringAppend(key, source[i]);
+        }
+        arrayPush(array, newString(key->value));
+        mutableStringFree(key);
+        return array;
+}
+
