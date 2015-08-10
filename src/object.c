@@ -50,7 +50,9 @@ while(0)
 } \
 while(0)
 
-const char *const ObjectPrettyTypeLiteral[] = {
+#define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
+
+LIBOBJECT_API const char *const ObjectPrettyTypeLiteral[] = {
 	"int",
 	"float",
 	"string",
@@ -60,7 +62,64 @@ const char *const ObjectPrettyTypeLiteral[] = {
 	"function"
 };
 
-uint32_t stringHash(const char* source, size_t length)
+LIBOBJECT_API char* objectToString(Object* this)
+{
+	BUG_ON_NULL(this);
+	char* buffer = NULL;
+	switch(O_TYPE(this)) {
+		case IS_LONG: {
+			buffer = malloc(32);
+			BUG_ON_NULL(buffer);
+			int ret = snprintf(buffer, 32, "%ld", O_LVAL(this));	
+		}
+		break;
+		case IS_DOUBLE: {
+			buffer = malloc(32);
+			BUG_ON_NULL(buffer);
+			int ret = snprintf(buffer, 32, "%f", O_DVAL(this));
+		}
+		break;
+		case IS_STRING: {
+			buffer = malloc(O_SVAL(this)->length + 1);	
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, O_SVAL(this)->value, O_SVAL(this)->length);
+			buffer[O_SVAL(this)->length] = '\0';				
+		}
+		break;
+		case IS_ARRAY: {
+			const char* array = "[object Array]";
+			size_t length = sizeof("[object Array]") -1;	
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, array, length);
+			buffer[length] = '\0';
+		}
+		break;
+		case IS_MAP: {
+			const char* map = "[object Map]";
+			size_t length = sizeof("[object Map]") -1;	
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, map, length);
+			buffer[length] = '\0';
+		}
+		break;
+		case IS_OBJECT:
+		case IS_FUNCTION: {
+			const char* object = "[object Object]";
+			size_t length = sizeof("[object Object]") -1;
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, object, length);
+			buffer[length] = '\0';
+		}
+		break;
+	}
+
+	return buffer;
+}
+
+LIBOBJECT_API uint32_t stringHash(const char* source, size_t length)
 {
 	BUG_ON_NULL(source);
 
@@ -90,7 +149,7 @@ static Object* newObject(ObjectType type)
 	return object;
 }
 
-Object* newLong(long value)
+LIBOBJECT_API Object* newLong(long value)
 {
 	Object* object = newObject(IS_LONG);
 	O_LVAL(object) = value;
@@ -98,7 +157,7 @@ Object* newLong(long value)
 	return object;
 }
 
-Object* newDouble(double value)
+LIBOBJECT_API Object* newDouble(double value)
 {
 	Object* object = newObject(IS_DOUBLE);
 	O_DVAL(object) = value;
@@ -123,7 +182,7 @@ static Map* newMapInstance(uint32_t size)
 	return map;
 }
 
-Object* newMap(uint32_t size)
+LIBOBJECT_API Object* newMap(uint32_t size)
 {
 	Object* object = newObject(IS_MAP);
 	Map*	map    = newMapInstance(size);
@@ -138,7 +197,7 @@ static uint32_t mapIndexFromKey(String* key, uint32_t capacity)
 	return (hash % capacity);
 }
 
-Object* copyObject(Object* o)
+LIBOBJECT_API Object* copyObject(Object* o)
 {
 	if(o == NULL) return NULL;
 	Object* ret;
@@ -284,7 +343,7 @@ static void mapRealDelete(Map* map, String* key, uint32_t hash)
 	}
 }
 
-void mapDelete(Object* object, const char* pkey)
+LIBOBJECT_API void mapDelete(Object* object, const char* pkey)
 {
 	BUG_ON_NULL(object);
 	BUG_ON_NULL(pkey);
@@ -304,7 +363,7 @@ void mapDelete(Object* object, const char* pkey)
 /*
  * @return the hashed value
  */
-uint32_t mapInsert(Object* map, const char* key, Object* value)
+LIBOBJECT_API uint32_t mapInsert(Object* map, const char* key, Object* value)
 {
 	BUG_ON_NULL(map);
 	if(O_TYPE(map) != IS_MAP) {
@@ -362,13 +421,13 @@ uint32_t mapInsert(Object* map, const char* key, Object* value)
 	return hash;
 }
 
-uint32_t mapSize(Object* object)
+LIBOBJECT_API uint32_t mapSize(Object* object)
 {
 	BUG_ON_NULL(object);
 	return O_MVAL(object)->size;
 }
 
-uint32_t mapCapacity(Object* object)
+LIBOBJECT_API uint32_t mapCapacity(Object* object)
 {
 	BUG_ON_NULL(object);
 	if(O_TYPE(object) != IS_MAP) {
@@ -377,7 +436,7 @@ uint32_t mapCapacity(Object* object)
 	return O_MVAL(object)->capacity;
 }
 
-Bucket* mapGetBucket(Object* object, uint32_t index)
+LIBOBJECT_API Bucket* mapGetBucket(Object* object, uint32_t index)
 {
 	BUG_ON_NULL(object);
 	Map* map = O_MVAL(object);
@@ -393,7 +452,7 @@ Bucket* mapGetBucket(Object* object, uint32_t index)
  * return a COPY of the value if found, NULL if not
  * the caller is resposible for freeing the returned value
  */
-Object*	mapSearch(Object* map, const char* key)
+LIBOBJECT_API Object* mapSearch(Object* map, const char* key)
 {
 	BUG_ON_NULL(map);
 	size_t key_length = strlen(key);	
@@ -419,7 +478,7 @@ Object*	mapSearch(Object* map, const char* key)
  * @hash the hashed string value
  * this doesn't work if two keys hash to the same value
  */
-Object*	mapGetValueByHash(Object* map, uint32_t hash)
+LIBOBJECT_API Object* mapGetValueByHash(Object* map, uint32_t hash)
 {
 	BUG_ON_NULL(map);	
 	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
@@ -453,7 +512,7 @@ static String* newStringInstance(const char* source)
 	return string;
 }
 
-Object* newString(const char* value)
+LIBOBJECT_API Object* newString(const char* value)
 {
 	BUG_ON_NULL(value);
 	
@@ -465,7 +524,61 @@ Object* newString(const char* value)
 	return object;
 }
 
-Object* newFunction(void* ptr)
+LIBOBJECT_API Object* newStringFromSequence(const char* value, size_t n)
+{	
+	BUG_ON_NULL(value);
+	Object* object = newObject(IS_STRING);
+	
+	String* string = ALLOCATE(String);
+	BUG_ON_NULL(string);
+	size_t length = n;
+	string->length = length;
+	string->value = malloc(sizeof(char) * length + 1);
+	BUG_ON_NULL(string->value);
+
+	size_t i = 0;
+	while(i < n) {
+		string->value[i] = *value;
+		value++;
+		i++;
+	}
+	string->value[length] = '\0';
+	O_SVAL(object) = string;
+	return object;
+}
+
+LIBOBJECT_API Object* newStringFromSubstr(Object* o, size_t pos, size_t len)
+{
+	BUG_ON_NULL(o);
+	if(O_TYPE(o) != IS_STRING) {
+		return NULL;
+	}
+	if(pos == O_SVAL(o)->length) {
+		return NULL;
+	}
+	Object* copy = copyObject(o);
+	BUG_ON_NULL(copy);
+	char* entire = O_SVAL(copy)->value;
+	size_t i;
+	char* subString = malloc(len + 1);
+	BUG_ON_NULL(subString);
+
+	for(i = 0; i < pos; i++)
+		entire++;	
+	for(i = 0; i < len; i++) {
+		subString[i] = *entire;
+		entire++;	
+	}		
+	subString[len] = '\0';
+	Object* ret = newString(subString);
+	BUG_ON_NULL(ret);
+	free(subString);
+	objectDestroy(copy);
+	return ret;
+}
+
+
+LIBOBJECT_API Object* newFunction(void* ptr)
 {
 	BUG_ON_NULL(ptr);
 	Object* object = newObject(IS_FUNCTION);
@@ -495,7 +608,7 @@ static Array* newArrayInstance(size_t size)
 	return array;
 }
 
-Object* newArray(size_t size)
+LIBOBJECT_API Object* newArray(size_t size)
 {
 	Object* object = newObject(IS_ARRAY);
 	if(object == NULL) {
@@ -534,7 +647,7 @@ static int arrayResize(Array* array)
 	return 1;
 }
 
-void arrayPush(Object* object, Object* value)
+LIBOBJECT_API void arrayPush(Object* object, Object* value)
 {
 	BUG_ON_NULL(object);
 	
@@ -569,7 +682,7 @@ static Object* arrayRealGet(Array* array, size_t index)
 	return array->table[index];
 }
 
-Object* arrayGet(Object* object, size_t index)
+LIBOBJECT_API Object* arrayGet(Object* object, size_t index)
 {
 	BUG_ON_NULL(object);
 
@@ -585,7 +698,7 @@ Object* arrayGet(Object* object, size_t index)
 	return NULL;
 }
 
-size_t arraySize(Object* object)
+LIBOBJECT_API size_t arraySize(Object* object)
 {
 	BUG_ON_NULL(object);
 	
@@ -597,42 +710,33 @@ size_t arraySize(Object* object)
 	return O_AVAL(object)->size;
 }
 
-void objectEcho(size_t length, ...)
+LIBOBJECT_API void objectEcho(Object* object)
 {
-	va_list args;
-	va_start(args, length);
-	
-	for(size_t i = 0; i < length; i++) {
-		
-		Object* object = va_arg(args, Object*);
-		
-		BUG_ON_NULL(object);
+	BUG_ON_NULL(object);
 
-		switch(O_TYPE(object)) {
-			case IS_LONG:
-				fprintf(stdout, "%ld", O_LVAL(object));
-			break;
-			case IS_DOUBLE:
-				fprintf(stdout, "%.2f", O_DVAL(object));
-			break;
-			case IS_STRING:
-				fprintf(stdout, "%s", O_SVAL(object)->value);
-			break;
-			case IS_ARRAY:
-				fprintf(stdout, "[Object Array]");
-			break;
-			case IS_MAP:
-				fprintf(stdout, "[Object Map]");
-			break;
-			default:
-				fprintf(stdout, "[Object Object]");
-			break;
-		}
-
-		fprintf(stdout, " ");
+	switch(O_TYPE(object)) {
+		case IS_LONG:
+			fprintf(stdout, "%ld", O_LVAL(object));
+		break;
+		case IS_DOUBLE:
+			fprintf(stdout, "%.2f", O_DVAL(object));
+		break;
+		case IS_STRING:
+			fprintf(stdout, "%s", O_SVAL(object)->value);
+		break;
+		case IS_ARRAY:
+			fprintf(stdout, "[Object Array]");
+		break;
+		case IS_MAP:
+			fprintf(stdout, "[Object Map]");
+		break;
+		default:
+			fprintf(stdout, "[Object Object]");
+		break;
 	}
+
+	fprintf(stdout, " ");
 		
-	va_end(args);
 }
 
 #define INDENT_LOOP(c) do { \
@@ -642,7 +746,7 @@ void objectEcho(size_t length, ...)
 } \
 while(0)
 
-void objectDump(Object* object, Object* last, size_t indent)
+LIBOBJECT_API void objectDump(Object* object, Object* last, size_t indent)
 {
 	BUG_ON_NULL(object);
 	size_t i;
@@ -742,7 +846,7 @@ void objectDump(Object* object, Object* last, size_t indent)
 }
 
 
-void objectDumpEx(Object* object, Object* last, size_t indent)
+LIBOBJECT_API void objectDumpEx(Object* object, Object* last, size_t indent)
 {
 	BUG_ON_NULL(object);
 	size_t i;
@@ -834,7 +938,7 @@ void objectDumpEx(Object* object, Object* last, size_t indent)
 	}
 }
 
-void objectSafeDestroy(Object* current, Object* last)
+LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 {
 	if(current == NULL) {
 		printf("current == NULL\n");

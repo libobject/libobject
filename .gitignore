@@ -1,5 +1,10 @@
 *.[ao]
 *.exe
+*.lo
+*.la
+.libs
+libtool
+ltmain.sh
 .deps
 INSTALL
 main

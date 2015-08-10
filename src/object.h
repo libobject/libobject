@@ -25,6 +25,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if BUILDING_LIBOBJECT && HAVE_VISIBILITY
+#define LIBOBJECT_API __attribute__((__visibility__("default")))
+#elif BUILDING_LIBOBJECT && defined _MSC_VER
+#define LIBOBJECT_API __declspec(dllexport)
+#elif defined _MSC_VER
+#define LIBOBJECT_API __declspec(dllimport)
+#else
+#define LIBOBJECT_API
+#endif
+
 /* Forward declaration. See below for definition */
 typedef struct Object Object;
 typedef struct Object IntegerObject;
@@ -40,10 +50,8 @@ typedef enum ObjectType {
 	IS_FUNCTION
 } ObjectType;
 
-extern const char *const ObjectPrettyTypeLiteral[];
+extern LIBOBJECT_API const char *const ObjectPrettyTypeLiteral[];
 
-#define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
- 
 typedef struct String {
 	size_t		length;
 	char*		value;
@@ -94,58 +102,38 @@ struct Object {
 #define O_AVAL(o) (o)->value.arrayValue
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
-/*
- * Scalar public API methods 
- */
-Object* 	newLong(long);
-Object*		newDouble(double);
-/*
- * Public API methods for a Map 
- */
-Object*		newMap(uint32_t);
-uint32_t	mapInsert(Object*, const char*, Object*);
-uint32_t	mapSize(Object*);
-uint32_t	mapCapacity(Object*);
-Bucket*		mapGetBucket(Object*, uint32_t);
-Object*		mapSearch(Object*, const char*);
-Object*		mapGetValueByHash(Object*, uint32_t);
-void		mapDelete(Object*, const char*);
-/*
- * Public API methods for String
- */
-Object*		newString(const char*);
-/*
- * Public API methods for Function
- */
-Object*		newFunction(void*);
-/*
- * Public API methods for Array
- */
-Object*		newArray(size_t);
-void		arrayPush(Object*, Object*);
-Object*		arrayGet(Object* object, size_t);
-size_t		arraySize(Object*);
 
-uint32_t stringHash(const char* source, size_t length);
+extern LIBOBJECT_API char*	objectToString(Object*);
+extern LIBOBJECT_API Object* 	newLong(long);
+extern LIBOBJECT_API Object*	newDouble(double);
+extern LIBOBJECT_API Object*	newMap(uint32_t);
+extern LIBOBJECT_API uint32_t	mapInsert(Object*, const char*, Object*);
+extern LIBOBJECT_API uint32_t	mapSize(Object*);
+extern LIBOBJECT_API uint32_t	mapCapacity(Object*);
+extern LIBOBJECT_API Bucket*	mapGetBucket(Object*, uint32_t);
+extern LIBOBJECT_API Object*	mapSearch(Object*, const char*);
+extern LIBOBJECT_API Object*	mapGetValueByHash(Object*, uint32_t);
+extern LIBOBJECT_API void	mapDelete(Object*, const char*);
+extern LIBOBJECT_API Object*	newString(const char*);
+extern LIBOBJECT_API Object*	newStringFromSequence(const char*, size_t);
+extern LIBOBJECT_API Object*	newStringFromSubstr(Object*, size_t, size_t);
+extern LIBOBJECT_API Object*	newFunction(void*);
+extern LIBOBJECT_API Object*	newArray(size_t);
+extern LIBOBJECT_API void	arrayPush(Object*, Object*);
+extern LIBOBJECT_API Object*	arrayGet(Object* object, size_t);
+extern LIBOBJECT_API size_t	arraySize(Object*);
+extern LIBOBJECT_API uint32_t 	stringHash(const char* source, size_t length);
+extern LIBOBJECT_API void 	objectEcho(Object*);
+extern LIBOBJECT_API void 	objectDump(Object*, Object*, size_t);
+extern LIBOBJECT_API void 	objectDumpEx(Object*, Object*, size_t);
+extern LIBOBJECT_API void 	objectSafeDestroy(Object*, Object*);
+extern LIBOBJECT_API Object* 	copyObject(Object*);
 
-#define VA_NUM_ARGS(...) VA_NUM_ARGS_IMPL(__VA_ARGS__, 6,5,4,3,2,1)
-#define VA_NUM_ARGS_IMPL(_1,_2,_3,_4,_5,_6,N,...) N
-
-/*
- * Public debugging methods
- */
-void objectEcho(size_t length, ...);
-void objectDump(Object*, Object*, size_t);
-void objectDumpEx(Object*, Object*, size_t);
+#define objectDestroy(o) objectSafeDestroy(o, NULL)
 
 #define OBJECT_DUMP(o) objectDump(o, NULL, 0)
 
 #define OBJECT_DUMP_EX(o) objectDumpEx(o, NULL, 0)
-
-void objectSafeDestroy(Object*, Object*);
-#define objectDestroy(o) objectSafeDestroy(o, NULL)
-
-Object* copyObject(Object*);
 
 #define BUG_ON_NULL(o) do { \
 	if(o == NULL) { \
@@ -189,7 +177,7 @@ while(0)
 				Object* _key = newString(_b->key->value); \
 
 #define MAP_FOREACH_KEY_VALUE(_ht, _k, _val) \
-	HT_FOREACH(_ht) \
+	MAP_FOREACH(_ht) \
 	_k = _key; \
 	_val = _value; \
 
