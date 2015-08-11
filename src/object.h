@@ -129,6 +129,7 @@ extern LIBOBJECT_API void 	objectDump(Object*, Object*, size_t);
 extern LIBOBJECT_API void 	objectDumpEx(Object*, Object*, size_t);
 extern LIBOBJECT_API void 	objectSafeDestroy(Object*, Object*);
 extern LIBOBJECT_API Object* 	copyObject(Object*);
+extern LIBOBJECT_API char*	objectToJson(Object*, int pretty);
 
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 

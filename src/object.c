@@ -82,7 +82,7 @@ LIBOBJECT_API char* objectToString(Object* this)
 		case IS_DOUBLE: {
 			buffer = malloc(32);
 			BUG_ON_NULL(buffer);
-			int ret = snprintf(buffer, 32, "%f", O_DVAL(this));
+			int ret = snprintf(buffer, 32, "%g", O_DVAL(this));
 		}
 		break;
 		case IS_STRING: {
@@ -1041,6 +1041,38 @@ static void mutableStringAppend(MutableString* ms, const char value)
         ms->value[current_position] = '\0';
 }
 
+static void mutableStringAppendString(MutableString* ss, const char* str)
+{
+        size_t part_length = strlen(str);
+        size_t i;
+        size_t current_position;
+        size_t new_length;
+
+        if (part_length == 0) {
+                return;
+        }
+
+        new_length = part_length + ss->length;
+        current_position = ss->length;
+
+        if (new_length >= ss->capacity) {
+                while (new_length >= ss->capacity) {
+                        ss->capacity *= 2;
+                        if ((ss->value = realloc(ss->value, ss->capacity)) == NULL) {
+                                return;
+                        }
+                }
+        }
+
+        for (i = 0; i < part_length; i++) {
+                ss->value[current_position++] = str[i];
+        }
+
+        ss->length = new_length;
+        ss->value[current_position] = '\0';
+
+}
+
 static void mutableStringReset(MutableString* ms)
 {
         ms->length = 0;
@@ -1077,4 +1109,127 @@ LIBOBJECT_API Object* stringSplit(const char* source, char sep)
         mutableStringFree(key);
         return array;
 }
+
+#define JSON_INDENT_LOOP(ms, x) do { \
+        int i; \
+        for(i = 0; i < x; i++) { \
+                mutableStringAppendString(ms, "  "); \
+        } \
+} while(0)
+
+static void object_to_json(MutableString* out, Object* o, int pretty, int indents, int* error)
+{
+	BUG_ON_NULL(out);
+	BUG_ON_NULL(o);
+	switch(O_TYPE(o)) {
+		case IS_MAP: {
+			uint32_t map_size = mapSize(o);
+			uint32_t i = 1;
+			mutableStringAppend(out, '{');
+			if(pretty)
+				mutableStringAppend(out, '\n');
+
+			Object* key; Object* value;
+			MAP_FOREACH_KEY_VALUE(o, key, value) {
+				char* skey = objectToString(key);
+				if(pretty) {
+					JSON_INDENT_LOOP(out, indents + 1);
+				}
+				mutableStringAppend(out, '"');
+				mutableStringAppendString(out, skey);
+				objectDestroy(key);
+				free(skey);
+				mutableStringAppend(out, '"');
+				mutableStringAppend(out, ':');
+				if(pretty)
+					mutableStringAppend(out, ' ');
+				object_to_json(out, value, pretty, indents + 1, error);
+				objectDestroy(value);
+				if(i != map_size)
+					mutableStringAppend(out, ',');
+				if(pretty)
+					mutableStringAppend(out, '\n');
+				i++;
+			} MAP_FOREACH_END();
+
+			if(pretty) {
+				JSON_INDENT_LOOP(out, indents);
+			}
+			mutableStringAppend(out, '}');
+		}
+		break;
+		case IS_STRING:
+			mutableStringAppend(out, '"');
+			mutableStringAppendString(out, O_SVAL(o)->value);
+			mutableStringAppend(out, '"');
+		break;
+		case IS_LONG: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);
+		}
+		break;
+		case IS_DOUBLE: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);
+		}
+		break;
+		case IS_ARRAY: {
+			mutableStringAppend(out, '[');
+			if(pretty)
+				mutableStringAppend(out, '\n');
+
+			size_t ar_size = arraySize(o);
+			size_t i;
+			Object* value;
+			ARRAY_ENUMERATE(o, i, value) {
+				if(pretty) {
+					JSON_INDENT_LOOP(out, indents + 1);
+				}
+				object_to_json(out, value, pretty, indents + 1, error);
+				objectDestroy(value);
+				if(i != ar_size - 1)
+					mutableStringAppend(out, ',');
+				if(pretty)
+					mutableStringAppend(out, '\n');
+			} ARRAY_ENUMERATE_END();
+			if(pretty) {
+				JSON_INDENT_LOOP(out, indents);
+			}
+			mutableStringAppend(out, ']');
+		}
+		break;
+		default:
+			*error = 1;
+		break;
+	}
+}
+
+LIBOBJECT_API char* objectToJson(Object* o, int pretty)
+{
+	BUG_ON_NULL(o);
+	MutableString* out = newMutableString();
+	if(!out)
+		return NULL;
+	
+	int status = 0;
+	object_to_json(out, o, pretty, 0, &status);	
+	if(status) {
+		mutableStringFree(out);
+		return NULL;
+	}	
+	char* buffer = malloc(out->length + 1);
+	if(!buffer) {
+		mutableStringFree(out);
+		return NULL;
+	}	
+
+	memcpy(buffer, out->value, out->length);
+	buffer[out->length] = '\0';
+
+	mutableStringFree(out);
+	return buffer;
+}
+
 
