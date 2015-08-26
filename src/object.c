@@ -506,7 +506,7 @@ LIBOBJECT_API Bucket* mapGetBucket(Object* object, uint32_t index)
 	Map* map = O_MVAL(object);
 	
 	if(index >= map->capacity) {
-		ERROR_NO_RETURN("RangeError: index of out of range");
+		return NULL;
 	}
 	
 	return map->buckets[index];
