@@ -1,1 +1,6 @@
-@LIBOBJECT_VERSION@
+#ifndef __LIB_OBJECT_CONFIG_H
+#define __LIB_OBJECT_CONFIG_H
+
+#define LIB_OBJECT_VERSION "@VERSION@"
+
+#endif
