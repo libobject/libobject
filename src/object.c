@@ -1,28 +1,42 @@
-/*
- *  Copyright (c) 2015 Ryan McCullagh <me@ryanmccullagh.com>
+/**
+ * @file
+ * @author Ryan McCullagh
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * @section LICENSE
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * Copyright (c) 2015 Ryan McCullagh <me@ryanmccullagh.com>
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * @section DESCRIPTION
+ *
+ * Libobject provides an API for dynamic values. Every _type_ provided
+ * by the library inherits from the Object structure. There are 7 types:
+ * null, bool, long, double, string, array, and map. This is similar to the
+ * JavaScript value system.
+ *
+ * Libobject exposes public functions to create these types.
+ *
  */
+
 #include <stdio.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
-
-#include "murmurhash3.h"
-#include "object.h"
+#include <float.h>
+#include <murmurhash3.h>
+#include <libobjectconfig.h>
+#include <object.h>
 
 typedef struct MutableString {
         size_t length;
@@ -58,7 +72,9 @@ while(0)
 
 #define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
 
-LIBOBJECT_API const char *const ObjectPrettyTypeLiteral[] = {
+const char *const ObjectPrettyTypeLiteral[] = {
+	"null",
+	"bool",
 	"int",
 	"float",
 	"string",
@@ -68,21 +84,50 @@ LIBOBJECT_API const char *const ObjectPrettyTypeLiteral[] = {
 	"function"
 };
 
+LIBOBJECT_API const char* libObjectVersion(void)
+{
+	return LIB_OBJECT_VERSION;
+}
+
 LIBOBJECT_API char* objectToString(Object* this)
 {
 	BUG_ON_NULL(this);
 	char* buffer = NULL;
 	switch(O_TYPE(this)) {
+		case IS_NULL: {
+			buffer = malloc(5);
+			BUG_ON_NULL(buffer);
+			const char* nval = "null";
+			memcpy(buffer, nval, 4);	
+			buffer[4] = '\0';
+		}
+		break;
+		case IS_BOOL: {
+			buffer = malloc(8);
+			BUG_ON_NULL(buffer);
+			const char* bval;
+			size_t length;
+			if(O_BVAL(this)) {
+				bval = "true";
+				length = sizeof("true") - 1;
+			} else {
+				bval = "false";
+				length = sizeof("false") -1;
+			}
+			memcpy(buffer, bval, length);
+			buffer[length] = '\0';
+		}
+		break;
 		case IS_LONG: {
 			buffer = malloc(32);
 			BUG_ON_NULL(buffer);
-			int ret = snprintf(buffer, 32, "%ld", O_LVAL(this));	
+			snprintf(buffer, 32, "%ld", O_LVAL(this));	
 		}
 		break;
 		case IS_DOUBLE: {
 			buffer = malloc(32);
 			BUG_ON_NULL(buffer);
-			int ret = snprintf(buffer, 32, "%f", O_DVAL(this));
+			snprintf(buffer, 32, "%.*G", DBL_DIG, O_DVAL(this));
 		}
 		break;
 		case IS_STRING: {
@@ -141,18 +186,31 @@ static Map*	newMapInstance(uint32_t);
 static String*	newStringInstance(const char*);
 static Array*	newArrayInstance(size_t);
 static int	arrayResize(Array*);
-static void	mapResize(Map*);
 static Object*	arrayRealGet(Array*, size_t);
 
 static Object* newObject(ObjectType type)
 {
 	Object* object = ALLOCATE(Object);
-	RETURN_ON_NULL(object);
+	BUG_ON_NULL(object);
 
 	O_TYPE(object) = type;	
 	O_MRKD(object) = 0;
 
 	return object;
+}
+
+LIBOBJECT_API Object* newNull(void)
+{
+	Object* o = newObject(IS_NULL);
+	O_NVAL(o) = 1;
+	return o;
+}
+
+LIBOBJECT_API Object* newBool(int value)
+{
+	Object* o = newObject(IS_BOOL);
+	O_BVAL(o) = value;
+	return o;
 }
 
 LIBOBJECT_API Object* newLong(long value)
@@ -197,17 +255,17 @@ LIBOBJECT_API Object* newMap(uint32_t size)
 	return object;
 }
 
-static uint32_t mapIndexFromKey(String* key, uint32_t capacity)
-{
-	uint32_t hash = stringHash(key->value, key->length);
-	return (hash % capacity);
-}
-
 LIBOBJECT_API Object* copyObject(Object* o)
 {
 	if(o == NULL) return NULL;
 	Object* ret;
 	switch(O_TYPE(o)) {
+		case IS_NULL:
+			ret = newNull();
+		break;
+		case IS_BOOL:
+			ret = newBool(O_BVAL(o));
+		break;
 		case IS_LONG: 
 			ret = newLong(O_LVAL(o));
 		break;
@@ -721,6 +779,12 @@ LIBOBJECT_API void objectEcho(Object* object)
 	BUG_ON_NULL(object);
 
 	switch(O_TYPE(object)) {
+		case IS_NULL:
+			fprintf(stdout, "null");
+		break;
+		case IS_BOOL:
+			fprintf(stdout, "%s", O_BVAL(object) ? "true" : "false");
+		break;
 		case IS_LONG:
 			fprintf(stdout, "%ld", O_LVAL(object));
 		break;
@@ -759,6 +823,20 @@ LIBOBJECT_API void objectDump(Object* object, Object* last, size_t indent)
 	size_t i;
 	
 	switch(O_TYPE(object)) {
+		case IS_NULL:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_NULL));
+			fprintf(stdout, "(");
+			fprintf(stdout, "null");
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
+		case IS_BOOL:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_BOOL));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%s", O_BVAL(object) ? "true" : "false");
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
 		case IS_LONG:
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_LONG));
 			fprintf(stdout, "(");
@@ -859,6 +937,20 @@ LIBOBJECT_API void objectDumpEx(Object* object, Object* last, size_t indent)
 	size_t i;
 	
 	switch(O_TYPE(object)) {
+		case IS_NULL:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_NULL));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)object);
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
+		case IS_BOOL:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_BOOL));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)object);
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
 		case IS_LONG:
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_LONG));
 			fprintf(stdout, "(");
@@ -954,6 +1046,8 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 	switch(O_TYPE(current)) {
 		case IS_LONG:
 		case IS_DOUBLE:
+		case IS_BOOL:
+		case IS_NULL:
 			free(current);
 		break;
 		case IS_STRING:
@@ -1041,6 +1135,38 @@ static void mutableStringAppend(MutableString* ms, const char value)
         ms->value[current_position] = '\0';
 }
 
+static void mutableStringAppendString(MutableString* ss, const char* str)
+{
+        size_t part_length = strlen(str);
+        size_t i;
+        size_t current_position;
+        size_t new_length;
+
+        if (part_length == 0) {
+                return;
+        }
+
+        new_length = part_length + ss->length;
+        current_position = ss->length;
+
+        if (new_length >= ss->capacity) {
+                while (new_length >= ss->capacity) {
+                        ss->capacity *= 2;
+                        if ((ss->value = realloc(ss->value, ss->capacity)) == NULL) {
+                                return;
+                        }
+                }
+        }
+
+        for (i = 0; i < part_length; i++) {
+                ss->value[current_position++] = str[i];
+        }
+
+        ss->length = new_length;
+        ss->value[current_position] = '\0';
+
+}
+
 static void mutableStringReset(MutableString* ms)
 {
         ms->length = 0;
@@ -1077,4 +1203,142 @@ LIBOBJECT_API Object* stringSplit(const char* source, char sep)
         mutableStringFree(key);
         return array;
 }
+
+#define JSON_INDENT_LOOP(ms, x) do { \
+        int i; \
+        for(i = 0; i < x; i++) { \
+                mutableStringAppendString(ms, "  "); \
+        } \
+} while(0)
+
+static void object_to_json(MutableString* out, Object* o, int pretty, int indents, int* error)
+{
+	BUG_ON_NULL(out);
+	BUG_ON_NULL(o);
+	switch(O_TYPE(o)) {
+		case IS_MAP: {
+			uint32_t map_size = mapSize(o);
+			uint32_t i = 1;
+			mutableStringAppend(out, '{');
+			if(pretty)
+				mutableStringAppend(out, '\n');
+
+			Object* key; Object* value;
+			MAP_FOREACH_KEY_VALUE(o, key, value) {
+				char* skey = objectToString(key);
+				if(pretty) {
+					JSON_INDENT_LOOP(out, indents + 1);
+				}
+				mutableStringAppend(out, '"');
+				mutableStringAppendString(out, skey);
+				objectDestroy(key);
+				free(skey);
+				mutableStringAppend(out, '"');
+				mutableStringAppend(out, ':');
+				if(pretty)
+					mutableStringAppend(out, ' ');
+				object_to_json(out, value, pretty, indents + 1, error);
+				objectDestroy(value);
+				if(i != map_size)
+					mutableStringAppend(out, ',');
+				if(pretty)
+					mutableStringAppend(out, '\n');
+				i++;
+			} MAP_FOREACH_END();
+
+			if(pretty) {
+				JSON_INDENT_LOOP(out, indents);
+			}
+			mutableStringAppend(out, '}');
+		}
+		break;
+		case IS_STRING:
+			mutableStringAppend(out, '"');
+			mutableStringAppendString(out, O_SVAL(o)->value);
+			mutableStringAppend(out, '"');
+		break;
+		case IS_LONG: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);	
+		}
+		break;
+		case IS_BOOL: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);
+		}
+		break;
+		case IS_NULL: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);
+		}
+		break;
+		case IS_DOUBLE: {
+			char* value = objectToString(o);
+			mutableStringAppendString(out, value);
+			free(value);
+		}
+		break;
+		case IS_ARRAY: {
+			mutableStringAppend(out, '[');
+			if(pretty)
+				mutableStringAppend(out, '\n');
+
+			size_t ar_size = arraySize(o);
+			size_t i;
+			Object* value;
+			ARRAY_ENUMERATE(o, i, value) {
+				if(pretty) {
+					JSON_INDENT_LOOP(out, indents + 1);
+				}
+				object_to_json(out, value, pretty, indents + 1, error);
+				objectDestroy(value);
+				if(i != ar_size - 1)
+					mutableStringAppend(out, ',');
+				if(pretty)
+					mutableStringAppend(out, '\n');
+			} ARRAY_ENUMERATE_END();
+			if(pretty) {
+				JSON_INDENT_LOOP(out, indents);
+			}
+			mutableStringAppend(out, ']');
+		}
+		break;
+		default:
+			*error = 1;
+		break;
+	}
+}
+
+LIBOBJECT_API char* objectToJson(Object* o, int pretty, size_t* length)
+{
+	BUG_ON_NULL(o);
+	MutableString* out = newMutableString();
+	if(!out) {
+		*length = 0;
+		return NULL;
+	}
+	int status = 0;
+	object_to_json(out, o, pretty, 0, &status);	
+	if(status) {
+		*length = 0;
+		mutableStringFree(out);
+		return NULL;
+	}	
+	char* buffer = malloc(out->length + 1);
+	if(!buffer) {
+		*length = 0;
+		mutableStringFree(out);
+		return NULL;
+	}	
+
+	memcpy(buffer, out->value, out->length);
+	buffer[out->length] = '\0';
+	*length = out->length;	
+	mutableStringFree(out);
+	return buffer;
+}
+
 

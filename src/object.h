@@ -18,12 +18,13 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
 
 #if BUILDING_LIBOBJECT && HAVE_VISIBILITY
 #define LIBOBJECT_API __attribute__((__visibility__("default")))
@@ -35,12 +36,11 @@
 #define LIBOBJECT_API
 #endif
 
-/* Forward declaration. See below for definition */
 typedef struct Object Object;
-typedef struct Object IntegerObject;
-typedef struct Object ArrayObject;
 
 typedef enum ObjectType {
+	IS_NULL,
+	IS_BOOL,
 	IS_LONG,
 	IS_DOUBLE,
 	IS_STRING,
@@ -49,8 +49,6 @@ typedef enum ObjectType {
 	IS_OBJECT,
 	IS_FUNCTION
 } ObjectType;
-
-extern LIBOBJECT_API const char *const ObjectPrettyTypeLiteral[];
 
 typedef struct String {
 	size_t		length;
@@ -78,13 +76,12 @@ typedef struct Map {
 	Bucket**	buckets;
 } Map;
 
-/*
- * 16 byte Object object
- */
 struct Object {
 	ObjectType	type;
 	int		marked;
 	union {
+		long		nullValue;
+		long		boolValue;
 		long 		longValue;
 		double 		doubleValue;
 		String* 	stringValue;
@@ -96,6 +93,8 @@ struct Object {
 
 #define O_TYPE(o) (o)->type
 #define O_MRKD(o) (o)->marked
+#define O_NVAL(o) (o)->value.nullValue
+#define O_BVAL(o) (o)->value.boolValue
 #define O_LVAL(o) (o)->value.longValue
 #define O_DVAL(o) (o)->value.doubleValue
 #define O_SVAL(o) (o)->value.stringValue
@@ -103,7 +102,12 @@ struct Object {
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
 
+extern LIBOBJECT_API 
+const char* libObjectVersion(void);
+
 extern LIBOBJECT_API char*	objectToString(Object*);
+extern LIBOBJECT_API Object*	newNull(void);
+extern LIBOBJECT_API Object*	newBool(int);
 extern LIBOBJECT_API Object* 	newLong(long);
 extern LIBOBJECT_API Object*	newDouble(double);
 extern LIBOBJECT_API Object*	newMap(uint32_t);
@@ -129,6 +133,7 @@ extern LIBOBJECT_API void 	objectDump(Object*, Object*, size_t);
 extern LIBOBJECT_API void 	objectDumpEx(Object*, Object*, size_t);
 extern LIBOBJECT_API void 	objectSafeDestroy(Object*, Object*);
 extern LIBOBJECT_API Object* 	copyObject(Object*);
+extern LIBOBJECT_API char*	objectToJson(Object*, int pretty, size_t* length);
 
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 

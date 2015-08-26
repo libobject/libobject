@@ -28,3 +28,6 @@ stamp-h1
 *~
 libobject-*.tar.gz
 .*.swp
+*.log
+*.trs
+libobjectconfig.h

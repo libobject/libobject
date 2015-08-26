@@ -1,10 +1,12 @@
 AC_INIT([libobject], [1.0.0], [bug-automake@gnu.org])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([disable-static])
-gl_VISIBILITY
 AC_SUBST([LIBTOOL_DEPS])
-AC_PROG_CC([gcc cc])
+LIB_OBJECT_VERSION=1:0:0
+AC_SUBST(LIB_OBJECT_VERSION)
+AC_PROG_CC
 AC_PROG_CC_C99
+AC_PROG_INSTALL
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([src/config.h])
 AC_ARG_ENABLE(debug,
@@ -18,9 +20,27 @@ AS_IF([test "x$enable_debug" = "xyes"], [
        AC_MSG_RESULT([yes])
 ], [ AC_MSG_RESULT([no]) ])
 
+if test -n "$GCC"; then
+  CFLAGS="$CFLAGS -g -Wall -Wextra"
+fi
+
 AC_CONFIG_FILES([
  Makefile
  src/Makefile
  src/libobjectconfig.h
 ])
 AC_OUTPUT
+
+cat << EOF
+
+Build configuration:
+	CPPFLAGS = $CPPFLAGS
+	CFLAGS = $CFLAGS
+	CXXFLAGS = $CXXFLAGS
+	LDFLAGS = $LDFLAGS
+	CC = $CC
+	Installation prefix: $prefix
+
+	To run the tests use make check
+	To install use make install
+EOF
