@@ -102,38 +102,36 @@ struct Object {
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
 
-extern LIBOBJECT_API 
-const char* libObjectVersion(void);
-
-extern LIBOBJECT_API char*	objectToString(Object*);
-extern LIBOBJECT_API Object*	newNull(void);
-extern LIBOBJECT_API Object*	newBool(int);
-extern LIBOBJECT_API Object* 	newLong(long);
-extern LIBOBJECT_API Object*	newDouble(double);
-extern LIBOBJECT_API Object*	newMap(uint32_t);
-extern LIBOBJECT_API uint32_t	mapInsert(Object*, const char*, Object*);
-extern LIBOBJECT_API uint32_t	mapSize(Object*);
-extern LIBOBJECT_API uint32_t	mapCapacity(Object*);
-extern LIBOBJECT_API Bucket*	mapGetBucket(Object*, uint32_t);
-extern LIBOBJECT_API Object*	mapSearch(Object*, const char*);
-extern LIBOBJECT_API Object*	mapGetValueByHash(Object*, uint32_t);
-extern LIBOBJECT_API void	mapDelete(Object*, const char*);
-extern LIBOBJECT_API Object*	newString(const char*);
-extern LIBOBJECT_API Object*	newStringFromSequence(const char*, size_t);
-extern LIBOBJECT_API Object*	newStringFromSubstr(Object*, size_t, size_t);
-extern LIBOBJECT_API Object*	newFunction(void*);
-extern LIBOBJECT_API Object*	newArray(size_t);
-extern LIBOBJECT_API void	arrayPush(Object*, Object*);
-extern LIBOBJECT_API Object*	arrayGet(Object* object, size_t);
-extern LIBOBJECT_API size_t	arraySize(Object*);
-extern LIBOBJECT_API uint32_t 	stringHash(const char* source, size_t length);
-extern LIBOBJECT_API Object*	stringSplit(const char*, char);
-extern LIBOBJECT_API void 	objectEcho(Object*);
-extern LIBOBJECT_API void 	objectDump(Object*, Object*, size_t);
-extern LIBOBJECT_API void 	objectDumpEx(Object*, Object*, size_t);
-extern LIBOBJECT_API void 	objectSafeDestroy(Object*, Object*);
-extern LIBOBJECT_API Object* 	copyObject(Object*);
-extern LIBOBJECT_API char*	objectToJson(Object*, int pretty, size_t* length);
+extern LIBOBJECT_API const char* libObjectVersion(void);
+extern LIBOBJECT_API char*       objectToString(Object*);
+extern LIBOBJECT_API Object*     newNull(void);
+extern LIBOBJECT_API Object*     newBool(int);
+extern LIBOBJECT_API Object*     newLong(long);
+extern LIBOBJECT_API Object*     newDouble(double);
+extern LIBOBJECT_API Object*     newMap(uint32_t);
+extern LIBOBJECT_API uint32_t    mapInsert(Object*, const char*, Object*);
+extern LIBOBJECT_API uint32_t    mapSize(Object*);
+extern LIBOBJECT_API uint32_t    mapCapacity(Object*);
+extern LIBOBJECT_API Bucket*     mapGetBucket(Object*, uint32_t);
+extern LIBOBJECT_API Object*     mapSearch(Object*, const char*);
+extern LIBOBJECT_API Object*     mapGetValueByHash(Object*, uint32_t);
+extern LIBOBJECT_API void        mapDelete(Object*, const char*);
+extern LIBOBJECT_API Object*     newString(const char*);
+extern LIBOBJECT_API Object*     newStringFromSequence(const char*, size_t);
+extern LIBOBJECT_API Object*     newStringFromSubstr(Object*, size_t, size_t);
+extern LIBOBJECT_API Object*     newFunction(void*);
+extern LIBOBJECT_API Object*     newArray(size_t);
+extern LIBOBJECT_API void        arrayPush(Object*, Object*);
+extern LIBOBJECT_API Object*     arrayGet(Object* object, size_t);
+extern LIBOBJECT_API size_t      arraySize(Object*);
+extern LIBOBJECT_API uint32_t    stringHash(const char* source, size_t length);
+extern LIBOBJECT_API Object*     stringSplit(const char*, char);
+extern LIBOBJECT_API void        objectEcho(Object*);
+extern LIBOBJECT_API void        objectDump(Object*, Object*, size_t);
+extern LIBOBJECT_API void        objectDumpEx(Object*, Object*, size_t);
+extern LIBOBJECT_API void        objectSafeDestroy(Object*, Object*);
+extern LIBOBJECT_API Object*     copyObject(Object*);
+extern LIBOBJECT_API char*       objectToJson(Object*, int pretty, size_t* length);
 
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 
