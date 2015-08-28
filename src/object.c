@@ -200,7 +200,8 @@ static Object*	arrayRealGet(Array*, size_t);
 static Object* newObject(ObjectType type)
 {
 	Object* object = ALLOCATE(Object);
-	BUG_ON_NULL(object);
+	if(object == NULL) 
+		return NULL;
 
 	O_TYPE(object) = type;	
 	O_MRKD(object) = 0;
@@ -211,6 +212,9 @@ static Object* newObject(ObjectType type)
 LIBOBJECT_API Object* newNull(void)
 {
 	Object* o = newObject(IS_NULL);
+	if(o == NULL)
+		return NULL;
+	
 	O_NVAL(o) = 1;
 	return o;
 }
@@ -218,6 +222,9 @@ LIBOBJECT_API Object* newNull(void)
 LIBOBJECT_API Object* newBool(int value)
 {
 	Object* o = newObject(IS_BOOL);
+	if(o == NULL)
+		return NULL;
+
 	O_BVAL(o) = value;
 	return o;
 }
@@ -225,6 +232,9 @@ LIBOBJECT_API Object* newBool(int value)
 LIBOBJECT_API Object* newLong(long value)
 {
 	Object* object = newObject(IS_LONG);
+	if(object == NULL)
+		return NULL;
+
 	O_LVAL(object) = value;
 
 	return object;
@@ -233,6 +243,9 @@ LIBOBJECT_API Object* newLong(long value)
 LIBOBJECT_API Object* newDouble(double value)
 {
 	Object* object = newObject(IS_DOUBLE);
+	if(object == NULL)
+		return NULL;
+
 	O_DVAL(object) = value;
 	
 	return object;
@@ -241,14 +254,18 @@ LIBOBJECT_API Object* newDouble(double value)
 static Map* newMapInstance(uint32_t size)
 {
 	Map* map = ALLOCATE(Map);
-	BUG_ON_NULL(map);
-
+	if(map == NULL)
+		return NULL;
+	
 	map->capacity = size;
 	map->size = 0;
 	
 	size_t s = (size_t)size;
 	Bucket** buckets = ALLOCATE_TABLE(s, Bucket);
-	BUG_ON_NULL(buckets);
+	if(buckets == NULL) {
+		free(map);
+		return NULL;
+	}
 
 	map->buckets = buckets;
 	
@@ -258,7 +275,15 @@ static Map* newMapInstance(uint32_t size)
 LIBOBJECT_API Object* newMap(uint32_t size)
 {
 	Object* object = newObject(IS_MAP);
+	if(object == NULL)
+		return NULL;
+
 	Map*	map    = newMapInstance(size);
+	if(map == NULL) {
+		free(object);
+		return NULL;
+	}
+	
 	O_MVAL(object) = map;	
 	
 	return object;
