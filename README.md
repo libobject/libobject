@@ -1,25 +1,40 @@
-# libobject
-`libobject` is a C library that provides dynamic copy on write data structures.
+# lib-object
+Libobject provides an API for dynamic values. Every _type_ provided
+by the library inherits from the Object structure. There are 7 types:
+null, bool, long, double, string, array, and map. This is similar to the
+JavaScript value system.
 
-# allocating objects
-allocating an object is a multi step process for the internal API. The userland
-API functions make this easier.
-To allocate an Array object instance, call `newArray(<size>)`.
-Inside of `newArray`, `newObject` is called. `newObject` tried to allocate 
-sizeof(Object) to the heap. If it fails to do that, it returns a NULL pointer.
-That return value of newObject is checked by newArray, and if it is NULL, newArray
-returns NULL. If the NULL check is false, then newArray will call newArrayInstance. 
-If it returns NULL, it will free the return value of `newObject`, and finally
-return NULL. The caller should the return value of newArray.
+Libobject exposes public functions to create these types.
 
-##ownership
-Ownership of allocated objects belongs to the caller. Data structures such as Map, Array, all make copies
-of the value argument.
+# Examples
+Creating an Array object type.
 
-##requirements
-- c99 compiler
+```C
+#include <object.h>
 
-##compiling
-- autoreconf --install
-- ./configure
-- make
+int main(void)
+{
+  Object* array = newArray(2); // create an array with a size of 2. It grows automatically.
+  
+  if(!array) return 1;
+  
+  Object* value = newString("libobject");
+  arrayPush(array, value);
+  objectDestroy(value); // arrayPush makes a copy of the value, so the caller should free it.
+  
+  OBJECT_DUMP(array);
+  
+  objectDestroy(array);
+
+  return 0;
+}
+```
+
+# Installing
+Only Linux systems are supported at this time. Auto-tools are required to install
+- `./autogen.sh`
+- `./configure`
+- `make`
+- `make install`
+
+This will install the binary into `/usr/local/lib`, and the header file `object.h` into `/usr/local/include` You may have to execute `ldconfig` to update the linkers cache. On some systems, `/usr/local` isn't in the include path (red hat), so you might have to figure out how to make it in the include path.
