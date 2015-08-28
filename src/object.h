@@ -139,15 +139,6 @@ extern LIBOBJECT_API char*       objectToJson(Object*, int pretty, size_t* lengt
 
 #define OBJECT_DUMP_EX(o) objectDumpEx(o, NULL, 0)
 
-#define BUG_ON_NULL(o) do { \
-	if(o == NULL) { \
-		fprintf(stderr, "%s:%s:%d caught a NULL pointer!\n", __FILE__, \
-			__FUNCTION__, __LINE__); \
-		exit(EXIT_FAILURE); \
-	} \
-} \
-while(0)
-
 #define ARRAY_FOREACH(_ar) do { \
 	size_t _i; \
 	for(_i = 0; _i < arraySize(_ar); _i++) { \

@@ -70,6 +70,15 @@ while(0)
 } \
 while(0)
 
+#define BUG_ON_NULL(o) do { \
+	if(o == NULL) { \
+		fprintf(stderr, "%s:%s:%d caught a NULL pointer!\n", __FILE__, \
+			__FUNCTION__, __LINE__); \
+		exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)
+
 #define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
 
 const char *const ObjectPrettyTypeLiteral[] = {

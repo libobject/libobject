@@ -62,7 +62,10 @@ LIBOBJECT_API Object* ObjectMM_Push(ObjectMMNode** list, Object* value)
 	}
 	if(*list == NULL) {
 		*list = malloc(sizeof(ObjectMMNode));
-		BUG_ON_NULL(*list);
+		if(*list == NULL) {
+			/* pass */
+			return value;
+		}
 		(*list)->value = value;
 		(*list)->ref_count = 1;
 		(*list)->next = NULL;
@@ -71,7 +74,10 @@ LIBOBJECT_API Object* ObjectMM_Push(ObjectMMNode** list, Object* value)
 		if(n == NULL) {
 			ObjectMMNode* prev = *list;
 			ObjectMMNode* next = malloc(sizeof(ObjectMMNode));
-			BUG_ON_NULL(next);
+			if(next == NULL) {
+				/* pass */
+				return value;	
+			}
 			next->value = value;
 			next->next = prev;
 			*list = next;
