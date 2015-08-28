@@ -38,3 +38,6 @@ Only Linux systems are supported at this time. Auto-tools are required to instal
 - `make install`
 
 This will install the binary into `/usr/local/lib`, and the header file `object.h` into `/usr/local/include` You may have to execute `ldconfig` to update the linkers cache. On some systems, `/usr/local` isn't in the include path (red hat), so you might have to figure out how to make it in the include path.
+
+# API Reference
+[http://libobject.github.io](http://libobject.github.io)
