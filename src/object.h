@@ -102,6 +102,7 @@ struct Object {
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
 
+extern LIBOBJECT_API int         setDebuggingOutFile(FILE*);
 extern LIBOBJECT_API const char* libObjectVersion(void);
 extern LIBOBJECT_API char*       objectToString(Object*);
 extern LIBOBJECT_API Object*     newNull(void);
