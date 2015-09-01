@@ -334,6 +334,7 @@ LIBOBJECT_API Object* copyObject(Object* o)
 		}
 		break;
 		default: 
+			printf("uh oh\n");
 			return NULL;
 		break;
 	}
@@ -347,6 +348,7 @@ static int mapTryResize(Map* map)
 	size_t n = (size_t)new_capacity;
 	Bucket** new_table = ALLOCATE_TABLE(n, Bucket);
 	if(new_table == NULL) {
+		printf("%s(): failed to allocated %u bytes\n", __func__, new_capacity);
 		return 0;
 	}
 	uint32_t i;
@@ -444,6 +446,7 @@ LIBOBJECT_API void mapDelete(Object* object, const char* pkey)
 	BUG_ON_NULL(object);
 	BUG_ON_NULL(pkey);
 	if(O_TYPE(object) != IS_MAP) {
+		printf("%s(): Object passed must be an instance of Map\n", __func__);
 		return;
 	}
 
@@ -462,17 +465,24 @@ LIBOBJECT_API uint32_t mapInsert(Object* map, const char* key, Object* value)
 {
 	BUG_ON_NULL(map);
 	if(O_TYPE(map) != IS_MAP) {
+		printf("%s(): Object passed must be an instance of Map\n", __func__);
 		return 0;
 	}
 	if(O_MVAL(map)->size >= O_MVAL(map)->capacity) {
 		int status;
 		if((status = mapTryResize(O_MVAL(map))) == 0) {
+			printf("%s(): failed to resize table\n", __func__);
 			return 0;		
-		} 
+		} else {
+			#ifdef DEBUG
+			printf("%s(): resizing table\n", __func__);
+			#endif
+		}
 	}
 	
 	Object* value_copy = copyObject(value);
 	if(value_copy == NULL) {
+		printf("%s(): failed to copy object\n", __func__);
 		return 0;
 	}
 
@@ -684,6 +694,7 @@ static Array* newArrayInstance(size_t size)
 	Object** table = ALLOCATE_TABLE(size, Object);
 	if(table == NULL) {
 		free(array);
+		printf("%s(): failed to allocate %zu bytes for array->table\n", __func__, size);
 		return NULL;
 	}
 
@@ -699,12 +710,14 @@ LIBOBJECT_API Object* newArray(size_t size)
 {
 	Object* object = newObject(IS_ARRAY);
 	if(object == NULL) {
+		printf("%s(): newObject() returned NULL\n", __func__);
 		return NULL;
 	}
 	
 	Array* array = newArrayInstance(size);
 	if(array == NULL) {
 		free(object);
+		printf("%s(): newArrayInstance() returned NULL\n", __func__);
 		return NULL;
 	}
 	O_AVAL(object) = array;
@@ -715,13 +728,15 @@ LIBOBJECT_API Object* newArray(size_t size)
 static int arrayResize(Array* array)
 {
 	if(array == NULL) {
+		printf("%s(): passing NULL pointer not allowed\n", __func__);
 		return 0;
 	}
 
 	size_t new_capacity = array->capacity * 2;
 	
 	Object** new_table = REALLOCATE(array->table, Object, new_capacity);
-  if(new_table == NULL) {
+      	if(new_table == NULL) {
+		printf("%s(): failed to reallocate %zu bytes\n", __func__, new_capacity);
 		return 0;
 	}	
 
@@ -735,11 +750,13 @@ LIBOBJECT_API void arrayPush(Object* object, Object* value)
 	BUG_ON_NULL(object);
 	
 	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
 		return;		
 	}
 
 	Object* value_copy = copyObject(value);
 	if(value_copy == NULL) {
+		printf("%s(): failed to push value, copyObject returned NULL\n", __func__);
 		return;
 	}
 
@@ -768,6 +785,7 @@ LIBOBJECT_API Object* arrayGet(Object* object, size_t index)
 	BUG_ON_NULL(object);
 
 	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
 		return NULL;		
 	}
 
@@ -783,6 +801,7 @@ LIBOBJECT_API size_t arraySize(Object* object)
 	BUG_ON_NULL(object);
 	
 	if(O_TYPE(object) != IS_ARRAY) {
+		printf("%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
 		return 0;		
 	}
 	
@@ -1054,9 +1073,10 @@ LIBOBJECT_API void objectDumpEx(Object* object, Object* last, size_t indent)
 
 LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 {
-	if(current == NULL)
+	if(current == NULL) {
+		printf("current == NULL\n");
 		return;
-
+	}
 	switch(O_TYPE(current)) {
 		case IS_LONG:
 		case IS_DOUBLE:
@@ -1073,6 +1093,7 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 			size_t i;
 			for(i = 0; i < arraySize(current); i++) {
 				if(current == last) {
+					printf("circular\n");
 					return;
 				} else {
 					Object* value = arrayRealGet(O_AVAL(current), i);
@@ -1104,6 +1125,7 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 		}
 		break;
 		default:
+			printf("%s(): invalid object\n", __func__);
 			return;
 		break;
 	}
