@@ -310,6 +310,9 @@ LIBOBJECT_API Object* copyObject(Object* o)
 	if(o == NULL) return NULL;
 	Object* ret;
 	switch(O_TYPE(o)) {
+		case IS_FUNCTION:
+			ret = newFunction(O_FVAL(o));
+		break;
 		case IS_NULL:
 			ret = newNull();
 		break;
@@ -966,6 +969,9 @@ LIBOBJECT_API void objectDump(Object* object, Object* last, size_t indent)
 			fprintf(stdout, "\n");
 		}
 		break;
+		case IS_FUNCTION:
+			fprintf(stdout, "[Object Function]\n");
+		break;
 		default:
 			fprintf(stdout, "[Object <none>]\n");
 		break;
@@ -979,6 +985,13 @@ LIBOBJECT_API void objectDumpEx(Object* object, Object* last, size_t indent)
 	size_t i;
 	
 	switch(O_TYPE(object)) {
+		case IS_FUNCTION:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_FUNCTION));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)O_FVAL(object));
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break;
 		case IS_NULL:
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_NULL));
 			fprintf(stdout, "(");
@@ -1089,6 +1102,7 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 		case IS_DOUBLE:
 		case IS_BOOL:
 		case IS_NULL:
+		case IS_FUNCTION:
 			free(current);
 		break;
 		case IS_STRING:
