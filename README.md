@@ -4,6 +4,9 @@ by the library inherits from the Object structure. There are 7 types:
 null, bool, long, double, string, array, and map. This is similar to the
 JavaScript value system.
 
+# What is it?
+An Object* pointer is either an Array, Map, int, double, bool, or String. Every value is an Object, so it is very flexible. Meaning that you can create an array with any type of Object value. Think of what a JSON value is and that is exactly what libobject provides. 
+
 Libobject exposes public functions to create these types.
 
 # Examples
