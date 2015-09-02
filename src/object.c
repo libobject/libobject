@@ -550,11 +550,7 @@ LIBOBJECT_API Bucket* mapGetBucket(Object* object, uint32_t index)
 	BUG_ON_NULL(object);
 	Map* map = O_MVAL(object);
 	
-	if(index >= map->capacity) {
-		return NULL;
-	}
-	
-	return map->buckets[index];
+	return index < map->capacity ? map->buckets[index] : NULL;
 }
 /*
  * search the Map for a value with the key equal to key.
@@ -795,7 +791,7 @@ LIBOBJECT_API void arrayPush(Object* object, Object* value)
  */
 static Object* arrayRealGet(Array* array, size_t index)
 {
-	return array->table[index];
+	return index < array->size ? array->table[index] : NULL;
 }
 
 LIBOBJECT_API Object* arrayGet(Object* object, size_t index)
@@ -807,11 +803,7 @@ LIBOBJECT_API Object* arrayGet(Object* object, size_t index)
 		return NULL;		
 	}
 
-	if(index < O_AVAL(object)->size) {
-		return copyObject(arrayRealGet(O_AVAL(object), index));
-	}
-	
-	return NULL;
+	return copyObject(arrayRealGet(O_AVAL(object), index));
 }
 
 LIBOBJECT_API size_t arraySize(Object* object)
