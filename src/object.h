@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <stdio.h> /* For FILE* */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

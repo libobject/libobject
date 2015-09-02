@@ -1,8 +1,8 @@
-AC_INIT([libobject], [1.0.0], [bug-automake@gnu.org])
+AC_INIT([libobject], [1.0.1], [bug-automake@gnu.org])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([disable-static])
 AC_SUBST([LIBTOOL_DEPS])
-LIB_OBJECT_VERSION=1:0:0
+LIB_OBJECT_VERSION=1:1:0
 AC_SUBST(LIB_OBJECT_VERSION)
 AC_PROG_CC
 AC_PROG_CC_C99
