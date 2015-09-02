@@ -626,7 +626,14 @@ LIBOBJECT_API Object* newString(const char* value)
 	BUG_ON_NULL(value);
 	
 	Object* object = newObject(IS_STRING);
+	if(!object)
+		return NULL;
+	
 	String* string = newStringInstance(value);
+	if(!string) {
+		free(object);
+		return NULL;
+	}
 
 	O_SVAL(object) = string;	
 	
