@@ -852,6 +852,9 @@ LIBOBJECT_API void objectEcho(Object* object)
 		case IS_MAP:
 			fprintf(stdout, "[Object Map]");
 		break;
+		case IS_FUNCTION:
+			fprintf(stdout, "[Object Function]\n");
+		break;
 		default:
 			fprintf(stdout, "[Object Object]");
 		break;
