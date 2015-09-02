@@ -25,6 +25,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h> /* for FILE */
 
 #if BUILDING_LIBOBJECT && HAVE_VISIBILITY
 #define LIBOBJECT_API __attribute__((__visibility__("default")))
