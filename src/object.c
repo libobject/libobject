@@ -362,6 +362,10 @@ LIBOBJECT_API Object* copyObject(Object* o)
 static int mapTryResize(Map* map)
 {
 	BUG_ON_NULL(map);
+	
+	if(map->capacity * 2 < map->capacity) 
+		return 0;
+	
 	uint32_t new_capacity = map->capacity * 2;
 	size_t n = (size_t)new_capacity;
 	Bucket** new_table = ALLOCATE_TABLE(n, Bucket);
@@ -745,6 +749,9 @@ static int arrayResize(Array* array)
 		fprintf(get_debug_fp(), "%s(): passing NULL pointer not allowed\n", __func__);
 		return 0;
 	}
+
+	if(array->capacity * 2 < array->capacity)
+		return 0;
 
 	size_t new_capacity = array->capacity * 2;
 	
