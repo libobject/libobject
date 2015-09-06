@@ -48,7 +48,8 @@ typedef enum ObjectType {
 	IS_ARRAY,
 	IS_MAP,
 	IS_OBJECT,
-	IS_FUNCTION
+	IS_FUNCTION,
+	IS_PAIR
 } ObjectType;
 
 typedef struct String {
@@ -77,6 +78,10 @@ typedef struct Map {
 	Bucket**	buckets;
 } Map;
 
+typedef struct Pair {
+	Object* first;
+	Object* second;
+} Pair;
 struct Object {
 	ObjectType	type;
 	int		marked;
@@ -89,6 +94,7 @@ struct Object {
 		Array*		arrayValue;
 		Map*		mapValue;
 		void*		functionValue;
+		Pair*	  pairValue;
 	} value;	
 };
 
@@ -102,10 +108,12 @@ struct Object {
 #define O_AVAL(o) (o)->value.arrayValue
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
+#define O_PVAL(o) (o)->value.pairValue
 
 extern LIBOBJECT_API int         setDebuggingOutFile(FILE*);
 extern LIBOBJECT_API const char* libObjectVersion(void);
 extern LIBOBJECT_API char*       objectToString(Object*);
+extern LIBOBJECT_API Object*		 newPair(Object*, Object*);
 extern LIBOBJECT_API Object*     newNull(void);
 extern LIBOBJECT_API Object*     newBool(int);
 extern LIBOBJECT_API Object*     newLong(long);
@@ -123,7 +131,7 @@ extern LIBOBJECT_API Object*     newStringFromSequence(const char*, size_t);
 extern LIBOBJECT_API Object*     newStringFromSubstr(Object*, size_t, size_t);
 extern LIBOBJECT_API Object*     newFunction(void*);
 extern LIBOBJECT_API Object*     newArray(size_t);
-extern LIBOBJECT_API void        arrayPush(Object*, Object*);
+extern LIBOBJECT_API size_t      arrayPush(Object*, Object*);
 extern LIBOBJECT_API Object*     arrayGet(Object* object, size_t);
 extern LIBOBJECT_API size_t      arraySize(Object*);
 extern LIBOBJECT_API uint32_t    stringHash(const char* source, size_t length);

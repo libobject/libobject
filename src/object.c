@@ -90,7 +90,8 @@ const char *const ObjectPrettyTypeLiteral[] = {
 	"array",
 	"map",
 	"object",
-	"function"
+	"function",
+	"pair"
 };
 
 static FILE* debug_fp = NULL;
@@ -181,6 +182,7 @@ LIBOBJECT_API char* objectToString(Object* this)
 		}
 		break;
 		case IS_OBJECT:
+		case IS_PAIR:
 		case IS_FUNCTION: {
 			const char* object = "[object Object]";
 			size_t length = sizeof("[object Object]") -1;
@@ -223,6 +225,28 @@ static Object* newObject(ObjectType type)
 	O_MRKD(object) = 0;
 
 	return object;
+}
+
+LIBOBJECT_API Object* newPair(Object* first, Object* second)
+{
+	Object* o = newObject(IS_PAIR);
+	if(o == NULL)
+		return NULL;
+
+	Pair* pair = calloc(1, sizeof(Pair));
+
+	if(!pair)
+	{
+		free(o);
+		return NULL;
+	}
+
+	pair->first = copyObject(first);
+	pair->second = copyObject(second);
+
+	O_PVAL(o) = pair;
+
+	return o;
 }
 
 LIBOBJECT_API Object* newNull(void)
@@ -312,6 +336,9 @@ LIBOBJECT_API Object* copyObject(Object* o)
 	switch(O_TYPE(o)) {
 		case IS_FUNCTION:
 			ret = newFunction(O_FVAL(o));
+		break;
+		case IS_PAIR:
+			ret = newPair(O_PVAL(o)->first, O_PVAL(o)->second);
 		break;
 		case IS_NULL:
 			ret = newNull();
@@ -766,25 +793,27 @@ static int arrayResize(Array* array)
 	return 1;
 }
 
-LIBOBJECT_API void arrayPush(Object* object, Object* value)
+LIBOBJECT_API size_t arrayPush(Object* object, Object* value)
 {
 	BUG_ON_NULL(object);
 	
 	if(O_TYPE(object) != IS_ARRAY) {
 		fprintf(get_debug_fp(), "%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
-		return;		
+		return 0;		
 	}
 
 	Object* value_copy = copyObject(value);
 	if(value_copy == NULL) {
 		fprintf(get_debug_fp(), "%s(): failed to push value, copyObject returned NULL\n", __func__);
-		return;
+		return 0;
 	}
+
+	size_t retval = O_AVAL(object)->nextIndex;
 
 	if(O_AVAL(object)->capacity == O_AVAL(object)->size) {
 		if(!arrayResize(O_AVAL(object))) {
 			objectDestroy(value_copy);
-			return;
+			return 0;
 		}
 		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value_copy;
 		O_AVAL(object)->size++;
@@ -792,6 +821,8 @@ LIBOBJECT_API void arrayPush(Object* object, Object* value)
 		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value_copy;
 		O_AVAL(object)->size++;
 	}
+
+	return retval;
 }
 /*
  * return a pointer to value at index i
@@ -1112,6 +1143,11 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 		case IS_BOOL:
 		case IS_NULL:
 		case IS_FUNCTION:
+			free(current);
+		break;
+		case IS_PAIR:
+			objectSafeDestroy(O_PVAL(current)->first, NULL);
+			objectSafeDestroy(O_PVAL(current)->second, NULL);
 			free(current);
 		break;
 		case IS_STRING:
