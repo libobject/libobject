@@ -1291,16 +1291,28 @@ LIBOBJECT_API Object* stringSplit(const char* source, char sep)
         for(i = 0; i < source_len; i++) {
                 if(source[i] == sep) {
                         if(i != 0) {
-                                arrayPush(array, newString(key->value));
-                                mutableStringReset(key);
+                                Object* v = newString(key->value);
+
+				arrayPush(array, v);
+                                
+				objectDestroy(v);
+
+				mutableStringReset(key);
                         }
                         continue;
                 }
                 mutableStringAppend(key, source[i]);
         }
-        arrayPush(array, newString(key->value));
-        mutableStringFree(key);
-        return array;
+
+	Object* str = newString(key->value);
+
+        arrayPush(array, str);
+	
+	objectDestroy(str);
+        
+	mutableStringFree(key);
+        
+	return array;
 }
 
 #define JSON_INDENT_LOOP(ms, x) do { \
