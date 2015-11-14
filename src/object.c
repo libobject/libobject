@@ -336,30 +336,38 @@ LIBOBJECT_API Object* copyObject(Object* o)
 	switch(O_TYPE(o)) {
 		case IS_FUNCTION:
 			ret = newFunction(O_FVAL(o));
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_PAIR:
 			ret = newPair(O_PVAL(o)->first, O_PVAL(o)->second);
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_NULL:
 			ret = newNull();
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_BOOL:
 			ret = newBool(O_BVAL(o));
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_LONG: 
 			ret = newLong(O_LVAL(o));
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_DOUBLE:
 			ret = newDouble(O_DVAL(o));
+			O_MRKD(ret) = O_MRKD(o);
 		break;
 		case IS_STRING: {
 			String* str = O_SVAL(o);
 			ret = newString(str->value);
+			O_MRKD(ret) = O_MRKD(o);
 		}
 		break;
 		case IS_ARRAY: {
 			size_t i;
 			ret = newArray(O_AVAL(o)->capacity);
+			O_MRKD(ret) = O_MRKD(o);
 			for(i = 0; i < O_AVAL(o)->size; i++) {
 				Object* value = arrayRealGet(O_AVAL(o), i);
 				arrayPush(ret, value);
@@ -369,6 +377,7 @@ LIBOBJECT_API Object* copyObject(Object* o)
 		case IS_MAP: {
 			uint32_t i;
 			ret = newMap(O_MVAL(o)->capacity);
+			O_MRKD(ret) = O_MRKD(o);
 			for(i = 0; i < O_MVAL(o)->capacity; i++) {
 				Bucket* b = mapGetBucket(o, i);
 				while(b != NULL) {
