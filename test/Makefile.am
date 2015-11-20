@@ -6,10 +6,14 @@ noinst_HEADERS = \
 
 noinst_PROGRAMS = \
 	newNumberFromCharArray	\
+	newString		\
+	objectToString		\
 	$(NULL)
 
 check_PROGRAMS = \
 	newNumberFromCharArray	\
+	newString		\
+	objectToString		\
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)

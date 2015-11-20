@@ -34,3 +34,5 @@ libobject-*.tar.gz
 libobjectconfig.h
 test-driver
 newNumberFromCharArray
+newString
+objectToString
