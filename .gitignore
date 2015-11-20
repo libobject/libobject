@@ -32,3 +32,5 @@ libobject-*.tar.gz
 *.log
 *.trs
 libobjectconfig.h
+test-driver
+newNumberFromCharArray
