@@ -115,6 +115,15 @@ LIBOBJECT_API const char* libObjectVersion(void)
 	return LIB_OBJECT_VERSION;
 }
 
+LIBOBJECT_API Object* newNumberFromCharArray(const char* text)
+{
+	double dval;
+
+	dval = strtod(text, NULL);
+	
+	return newDouble(dval);
+}
+
 LIBOBJECT_API char* objectToString(Object* this)
 {
 	BUG_ON_NULL(this);

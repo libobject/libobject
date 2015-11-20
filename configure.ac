@@ -28,6 +28,7 @@ AC_CONFIG_FILES([
  Makefile
  src/Makefile
  src/libobjectconfig.h
+ test/Makefile
 ])
 AC_OUTPUT
 
