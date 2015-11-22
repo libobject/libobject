@@ -8,12 +8,14 @@ noinst_PROGRAMS = \
 	newNumberFromCharArray	\
 	newString		\
 	objectToString		\
+	newLong			\
 	$(NULL)
 
 check_PROGRAMS = \
 	newNumberFromCharArray	\
 	newString		\
 	objectToString		\
+	newLong			\
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)

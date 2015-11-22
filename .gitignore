@@ -36,3 +36,4 @@ test-driver
 newNumberFromCharArray
 newString
 objectToString
+newLong
