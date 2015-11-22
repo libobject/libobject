@@ -82,6 +82,7 @@ typedef struct Pair {
 	Object* first;
 	Object* second;
 } Pair;
+
 struct Object {
 	ObjectType	type;
 	int		marked;
