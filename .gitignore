@@ -38,3 +38,4 @@ newString
 objectToString
 newLong
 newDouble
+newFunction

@@ -10,6 +10,7 @@ noinst_PROGRAMS = \
 	objectToString		\
 	newLong			\
 	newDouble		\
+	newFunction		\
 	$(NULL)
 
 check_PROGRAMS = \
@@ -18,6 +19,7 @@ check_PROGRAMS = \
 	objectToString		\
 	newLong			\
 	newDouble		\
+	newFunction		\
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
