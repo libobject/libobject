@@ -11,6 +11,7 @@ static void test_newNumberFromCharArray(void)
 
 	expect((O_DVAL(value)) == 777);
 	
+	objectDestroy(value);
 }
 
 int main(void)

@@ -11,6 +11,7 @@ static void test_newString(void)
 
 	expect(str_equal(O_SVAL(value)->value, "Ryan McCullagh"));
 	
+	objectDestroy(value);
 }
 
 int main(void)

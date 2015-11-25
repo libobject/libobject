@@ -14,7 +14,8 @@ static void test_objectToString(void)
 	expect(str_equal(sval, "777"));
 
 	free(sval);
-	
+
+	objectDestroy(value);	
 }
 
 int main(void)
