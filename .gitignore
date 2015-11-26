@@ -39,3 +39,4 @@ objectToString
 newLong
 newDouble
 newFunction
+objectToJson
