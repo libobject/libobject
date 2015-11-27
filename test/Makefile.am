@@ -12,6 +12,7 @@ noinst_PROGRAMS = \
 	newDouble		\
 	newFunction		\
 	objectToJson		\
+	newPair			\
 	$(NULL)
 
 check_PROGRAMS = \
@@ -22,6 +23,7 @@ check_PROGRAMS = \
 	newDouble		\
 	newFunction		\
 	objectToJson		\
+	newPair			\
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
