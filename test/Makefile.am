@@ -14,6 +14,7 @@ noinst_PROGRAMS = \
 	objectToJson		\
 	newPair			\
 	objectValueTypeCompare  \
+	objectValueCompare      \
 	$(NULL)
 
 check_PROGRAMS = \
@@ -26,6 +27,7 @@ check_PROGRAMS = \
 	objectToJson		\
 	newPair			\
 	objectValueTypeCompare  \
+	objectValueCompare      \
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)

@@ -115,6 +115,7 @@ extern LIBOBJECT_API int         setDebuggingOutFile(FILE*);
 extern LIBOBJECT_API const char* libObjectVersion(void);
 extern LIBOBJECT_API char*       objectToString(Object*);
 extern LIBOBJECT_API int         objectValueTypeCompare(Object*, Object*);
+extern LIBOBJECT_API int         objectValueCompare(Object*, Object*);
 extern LIBOBJECT_API Object*     newNumberFromCharArray(const char*);
 extern LIBOBJECT_API Object*     newPair(Object*, Object*);
 extern LIBOBJECT_API Object*     newNull(void);
