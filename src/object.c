@@ -115,6 +115,11 @@ LIBOBJECT_API const char* libObjectVersion(void)
 	return LIB_OBJECT_VERSION;
 }
 
+LIBOBJECT_API int objectValueTypeCompare(Object* left, Object* right)
+{
+	return O_TYPE(left) == O_TYPE(right);	
+}
+
 LIBOBJECT_API Object* newNumberFromCharArray(const char* text)
 {
 	double dval;
