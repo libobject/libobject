@@ -26,7 +26,7 @@ Creating an Array object type.
 ```C
 #include <object.h>
 
-	int main(void)
+int main(void)
 {
   Object* array = newArray(2); // create an array with a size of 2. It grows automatically.
   
@@ -45,7 +45,7 @@ Creating an Array object type.
 ```
 
 # Installing
-Only Linux systems are supported at this time. Auto-tools are required to install
+Only Linux systems are supported at this time. [https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html](autotools] are required to install and [http://www.gnu.org/software/libtool/](libtool).
 - `./autogen.sh`
 - `./configure`
 - `make`
