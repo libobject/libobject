@@ -45,7 +45,8 @@ int main(void)
 ```
 
 # Installing
-Only Linux systems are supported at this time. (https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html)[autotools] are required to install and (http://www.gnu.org/software/libtool/)[libtool].
+Only Linux systems are supported at this time. [autotools](https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html) and  [libtool](http://www.gnu.org/software/libtool/) are required to install
+
 - `./autogen.sh`
 - `./configure`
 - `make`
