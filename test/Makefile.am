@@ -15,6 +15,7 @@ noinst_PROGRAMS = \
 	newPair			\
 	objectValueTypeCompare  \
 	objectValueCompare      \
+	mapSearchEx      	\
 	$(NULL)
 
 check_PROGRAMS = \
@@ -27,6 +28,7 @@ check_PROGRAMS = \
 	objectToJson		\
 	newPair			\
 	objectValueTypeCompare  \
+	mapSearchEx		\
 	objectValueCompare      \
 	$(NULL)
 

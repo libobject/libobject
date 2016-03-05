@@ -556,7 +556,55 @@ LIBOBJECT_API void mapDelete(Object* object, const char* pkey)
 	free(key);
 }
 
+LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
+{
+	BUG_ON_NULL(map);
+	if(O_TYPE(map) != IS_MAP) {
+		fprintf(get_debug_fp(), "%s(): Object passed must be an instance of Map\n", __func__);
+		return 0;
+	}
+	if(O_MVAL(map)->size >= O_MVAL(map)->capacity) {
+		int status;
+		if((status = mapTryResize(O_MVAL(map))) == 0) {
+			fprintf(get_debug_fp(), "%s(): failed to resize table\n", __func__);
+			return 0;		
+		}
+	}
+	
+	Object* value_copy = value;
 
+	String* keyObject = newStringInstance(key);
+	uint32_t hash = stringHash(keyObject->value, keyObject->length);
+	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
+	Bucket* bucket = O_MVAL(map)->buckets[bucket_index];
+	while(bucket != NULL) {
+		if((bucket->hash == hash) && 
+			(keyObject->length == bucket->key->length) &&
+			((memcmp(bucket->key->value, keyObject->value, bucket->key->length)) == 0))
+		{
+			Object* oldValue = bucket->value;
+			/* free the old value */
+			objectSafeDestroy(oldValue, NULL);
+			bucket->value = value_copy;		
+			/* not used if it exists already */
+			free(keyObject->value);
+			free(keyObject);
+			return hash;
+		}
+		bucket = bucket->next;
+	}
+
+	bucket = ALLOCATE(Bucket);
+	BUG_ON_NULL(bucket);
+	bucket->key = keyObject;
+	bucket->value = value_copy;
+	bucket->hash = hash;
+	bucket->next = O_MVAL(map)->buckets[bucket_index];	
+	O_MVAL(map)->buckets[bucket_index] = bucket;
+	O_MVAL(map)->size++;
+	
+	return hash;
+}
 /*
  * @return the hashed value
  */
@@ -663,6 +711,27 @@ LIBOBJECT_API Object* mapSearch(Object* map, const char* key)
 	return NULL;
 }
 
+LIBOBJECT_API Object* mapSearchEx(Object* map, const char* key)
+{
+	BUG_ON_NULL(map);
+	size_t key_length = strlen(key);	
+	uint32_t hash = stringHash(key, key_length);
+	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
+	Bucket* bucket = O_MVAL(map)->buckets[bucket_index];
+
+	while(bucket != NULL) {
+		if((bucket->hash == hash) && 
+			(key_length == bucket->key->length) &&
+			((memcmp(bucket->key->value, key, bucket->key->length)) == 0))
+		{
+			return bucket->value;
+		}
+
+		bucket = bucket->next;
+	}
+
+	return NULL;
+}
 /*
  * @hash the hashed string value
  * this doesn't work if two keys hash to the same value

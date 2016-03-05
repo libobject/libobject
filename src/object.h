@@ -123,11 +123,19 @@ extern LIBOBJECT_API Object*     newBool(int);
 extern LIBOBJECT_API Object*     newLong(long);
 extern LIBOBJECT_API Object*     newDouble(double);
 extern LIBOBJECT_API Object*     newMap(uint32_t);
+/*
+ * insert an object without copying it
+ */
+extern LIBOBJECT_API uint32_t    mapInsertEx(Object*, const char*, Object*);
 extern LIBOBJECT_API uint32_t    mapInsert(Object*, const char*, Object*);
 extern LIBOBJECT_API uint32_t    mapSize(Object*);
 extern LIBOBJECT_API uint32_t    mapCapacity(Object*);
 extern LIBOBJECT_API Bucket*     mapGetBucket(Object*, uint32_t);
 extern LIBOBJECT_API Object*     mapSearch(Object*, const char*);
+/*
+ * Search the Map member of the first argument and don't return a copy
+ */
+extern LIBOBJECT_API Object*     mapSearchEx(Object*, const char*);
 extern LIBOBJECT_API Object*     mapGetValueByHash(Object*, uint32_t);
 extern LIBOBJECT_API void        mapDelete(Object*, const char*);
 extern LIBOBJECT_API Object*     newString(const char*);
