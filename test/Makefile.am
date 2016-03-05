@@ -16,6 +16,7 @@ noinst_PROGRAMS = \
 	objectValueTypeCompare  \
 	objectValueCompare      \
 	mapSearchEx      	\
+	stringCat      		\
 	$(NULL)
 
 check_PROGRAMS = \
@@ -29,6 +30,7 @@ check_PROGRAMS = \
 	newPair			\
 	objectValueTypeCompare  \
 	mapSearchEx		\
+	stringCat      		\
 	objectValueCompare      \
 	$(NULL)
 

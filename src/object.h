@@ -138,6 +138,7 @@ extern LIBOBJECT_API Object*     mapSearch(Object*, const char*);
 extern LIBOBJECT_API Object*     mapSearchEx(Object*, const char*);
 extern LIBOBJECT_API Object*     mapGetValueByHash(Object*, uint32_t);
 extern LIBOBJECT_API void        mapDelete(Object*, const char*);
+extern LIBOBJECT_API Object*     stringCat(Object *, Object *);
 extern LIBOBJECT_API Object*     newString(const char*);
 extern LIBOBJECT_API Object*     newStringFromSequence(const char*, size_t);
 extern LIBOBJECT_API Object*     newStringFromSubstr(Object*, size_t, size_t);

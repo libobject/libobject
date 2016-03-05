@@ -770,6 +770,36 @@ static String* newStringInstance(const char* source)
 	return string;
 }
 
+LIBOBJECT_API Object* stringCat(Object *o1, Object *o2)
+{
+	String *s1 = O_SVAL(o1);
+	String *s2 = O_SVAL(o2);
+
+	size_t len = s1->length + s2->length + 1;
+
+	char *buffer = malloc(len);
+
+	if(!buffer)
+		return NULL;	
+
+	memcpy(buffer, s1->value, s1->length);
+	memcpy(buffer + s1->length, s2->value, s2->length);
+
+	buffer[len] = '\0';
+
+	Object *retval = newString(buffer);
+
+	if(!retval) {
+		free(buffer);
+		return NULL;
+	}
+	
+	free(buffer);
+
+	return retval;
+}
+
+
 LIBOBJECT_API Object* newString(const char* value)
 {
 	BUG_ON_NULL(value);
