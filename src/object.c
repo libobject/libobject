@@ -201,10 +201,14 @@ LIBOBJECT_API char* objectToString(Object* this)
 		}
 		break;
 		case IS_STRING: {
-			buffer = malloc(O_SVAL(this)->length + 1);	
-			BUG_ON_NULL(buffer);
-			memcpy(buffer, O_SVAL(this)->value, O_SVAL(this)->length);
-			buffer[O_SVAL(this)->length] = '\0';				
+			if(O_SVAL(this)->length + 1 < O_SVAL(this)->length) {
+				buffer = NULL;
+			} else {
+				buffer = malloc(O_SVAL(this)->length + 1);	
+				BUG_ON_NULL(buffer);
+				memcpy(buffer, O_SVAL(this)->value, O_SVAL(this)->length);
+				buffer[O_SVAL(this)->length] = '\0';
+			}				
 		}
 		break;
 		case IS_ARRAY: {
