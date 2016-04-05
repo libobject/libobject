@@ -79,6 +79,15 @@ while(0)
 } \
 while(0)
 
+/*
+ * Safe sanity checker
+ */
+#define GUARDED_REQUIRE(expression, not, returnvalue) do { \
+	if(! ((expression) != not)) \
+		return (returnvalue); \
+} \
+while(0);
+
 #define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
 
 static const char *const ObjectPrettyTypeLiteral[] = {
@@ -117,11 +126,17 @@ LIBOBJECT_API const char* libObjectVersion(void)
 
 LIBOBJECT_API int objectValueTypeCompare(Object* left, Object* right)
 {
+	GUARDED_REQUIRE(left,  NULL, 0);
+	GUARDED_REQUIRE(right, NULL, 0);
+
 	return O_TYPE(left) == O_TYPE(right);	
 }
 
 LIBOBJECT_API int objectValueCompare(Object* left, Object* right)
 {
+	GUARDED_REQUIRE(left,  NULL, 0);
+	GUARDED_REQUIRE(right, NULL, 0);
+
 	if(O_TYPE(left) != O_TYPE(right)) {
 		return 0;
 	} else {
@@ -152,6 +167,8 @@ LIBOBJECT_API int objectValueCompare(Object* left, Object* right)
 
 LIBOBJECT_API Object* newNumberFromCharArray(const char* text)
 {
+	GUARDED_REQUIRE(text, NULL, NULL);
+
 	double dval;
 
 	dval = strtod(text, NULL);
@@ -277,7 +294,11 @@ static Object* newObject(ObjectType type)
 
 LIBOBJECT_API Object* newPair(Object* first, Object* second)
 {
+	GUARDED_REQUIRE(first, NULL, NULL);
+	GUARDED_REQUIRE(second, NULL, NULL);
+
 	Object* o = newObject(IS_PAIR);
+	
 	if(o == NULL)
 		return NULL;
 
