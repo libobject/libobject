@@ -81,7 +81,7 @@ while(0)
 
 #define O_PRETTY_TYPE(i) ObjectPrettyTypeLiteral[i]
 
-const char *const ObjectPrettyTypeLiteral[] = {
+static const char *const ObjectPrettyTypeLiteral[] = {
 	"null",
 	"bool",
 	"int",
