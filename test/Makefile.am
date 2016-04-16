@@ -16,6 +16,7 @@ noinst_PROGRAMS = \
 	objectValueTypeCompare  \
 	objectValueCompare      \
 	mapSearchEx      	\
+	objectValueIsLessThan   \
 	stringCat      		\
 	$(NULL)
 
@@ -32,6 +33,7 @@ check_PROGRAMS = \
 	mapSearchEx		\
 	stringCat      		\
 	objectValueCompare      \
+	objectValueIsLessThan   \
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
