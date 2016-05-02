@@ -18,6 +18,8 @@ noinst_PROGRAMS = \
 	mapSearchEx      	\
 	objectValueIsLessThan   \
 	stringCat      		\
+	libObjectVersion \
+	newPointer	\
 	$(NULL)
 
 check_PROGRAMS = \
@@ -34,6 +36,8 @@ check_PROGRAMS = \
 	stringCat      		\
 	objectValueCompare      \
 	objectValueIsLessThan   \
+	libObjectVersion \
+	newPointer \
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
