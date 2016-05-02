@@ -49,7 +49,8 @@ typedef enum ObjectType {
 	IS_MAP,
 	IS_OBJECT,
 	IS_FUNCTION,
-	IS_PAIR
+	IS_PAIR,
+	IS_POINTER
 } ObjectType;
 
 typedef struct String {
@@ -90,12 +91,13 @@ struct Object {
 		long		nullValue;
 		long		boolValue;
 		long 		longValue;
-		double 		doubleValue;
-		String* 	stringValue;
-		Array*		arrayValue;
+		double 	doubleValue;
+		String* stringValue;
+		Array*	arrayValue;
 		Map*		mapValue;
 		void*		functionValue;
 		Pair*	  pairValue;
+		void*   pointerValue;
 	} value;	
 };
 
@@ -110,14 +112,17 @@ struct Object {
 #define O_MVAL(o) (o)->value.mapValue
 #define O_FVAL(o) (o)->value.functionValue
 #define O_PVAL(o) (o)->value.pairValue
+#define O_PTVAL(o) (o)->value.pointerValue
 
 extern LIBOBJECT_API int         setDebuggingOutFile(FILE*);
 extern LIBOBJECT_API const char* libObjectVersion(void);
+extern LIBOBJECT_API char*       objectToStringLength(Object*, size_t *);
 extern LIBOBJECT_API char*       objectToString(Object*);
 extern LIBOBJECT_API int         objectValueTypeCompare(Object*, Object*);
 extern LIBOBJECT_API int         objectValueCompare(Object*, Object*);
 extern LIBOBJECT_API int         objectValueIsLessThan(Object *, Object *);
 extern LIBOBJECT_API Object*     newNumberFromCharArray(const char*);
+extern LIBOBJECT_API Object*     newPointer(void *);
 extern LIBOBJECT_API Object*     newPair(Object*, Object*);
 extern LIBOBJECT_API Object*     newNull(void);
 extern LIBOBJECT_API Object*     newBool(int);

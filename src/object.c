@@ -100,7 +100,8 @@ static const char *const ObjectPrettyTypeLiteral[] = {
 	"map",
 	"object",
 	"function",
-	"pair"
+	"pair",
+	"pointer"
 };
 
 static FILE* debug_fp = NULL;
@@ -141,6 +142,9 @@ LIBOBJECT_API int objectValueIsLessThan(Object* left, Object* right)
 		return 0;
 	} else {
 		switch(O_TYPE(left)) {
+			case IS_POINTER:
+				return ((uintptr_t)O_PTVAL(left)) < ((uintptr_t)O_PTVAL(right));
+			break;
 			case IS_NULL:
 				return 0;
 			break;
@@ -172,6 +176,9 @@ LIBOBJECT_API int objectValueCompare(Object* left, Object* right)
 		return 0;
 	} else {
 		switch(O_TYPE(left)) {
+			case IS_POINTER:
+				return ((uintptr_t)O_PTVAL(left)) == ((uintptr_t)O_PTVAL(right));
+			break;
 			case IS_NULL:
 				return 1;
 			break;
@@ -205,6 +212,97 @@ LIBOBJECT_API Object* newNumberFromCharArray(const char* text)
 	dval = strtod(text, NULL);
 	
 	return newDouble(dval);
+}
+
+LIBOBJECT_API char *objectToStringLength(Object *this, size_t *len)
+{
+	BUG_ON_NULL(this);
+	char* buffer = NULL;
+	size_t length = 0;
+	switch(O_TYPE(this)) {
+		case IS_NULL: {
+			buffer = malloc(5);
+			BUG_ON_NULL(buffer);
+			const char* nval = "null";
+			memcpy(buffer, nval, 4);	
+			buffer[4] = '\0';
+			length = 4;
+		}
+		break;
+		case IS_BOOL: {
+			buffer = malloc(8);
+			BUG_ON_NULL(buffer);
+			const char* bval;
+			if(O_BVAL(this)) {
+				bval = "true";
+				length = sizeof("true") - 1;
+			} else {
+				bval = "false";
+				length = sizeof("false") -1;
+			}
+			memcpy(buffer, bval, length);
+			buffer[length] = '\0';
+		}
+		break;
+		case IS_LONG: {
+			buffer = malloc(32);
+			BUG_ON_NULL(buffer);
+			snprintf(buffer, 32, "%ld", O_LVAL(this));
+			length = strlen(buffer);	
+		}
+		break;
+		case IS_DOUBLE: {
+			buffer = malloc(32);
+			BUG_ON_NULL(buffer);
+			snprintf(buffer, 32, "%.*G", DBL_DIG, O_DVAL(this));
+			length = strlen(buffer);
+		}
+		break;
+		case IS_STRING: {
+			if(O_SVAL(this)->length + 1 < O_SVAL(this)->length) {
+				buffer = NULL;
+			} else {
+				buffer = malloc(O_SVAL(this)->length + 1);	
+				BUG_ON_NULL(buffer);
+				length = O_SVAL(this)->length;
+				memcpy(buffer, O_SVAL(this)->value, O_SVAL(this)->length);
+				buffer[O_SVAL(this)->length] = '\0';
+			}				
+		}
+		break;
+		case IS_ARRAY: {
+			const char* array = "[object Array]";
+			length = sizeof("[object Array]") -1;	
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, array, length);
+			buffer[length] = '\0';
+		}
+		break;
+		case IS_MAP: {
+			const char* map = "[object Map]";
+			length = sizeof("[object Map]") -1;	
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, map, length);
+			buffer[length] = '\0';
+		}
+		break;
+		case IS_OBJECT:
+		case IS_PAIR:
+		case IS_POINTER:
+		case IS_FUNCTION: {
+			const char* object = "[object Object]";
+			length = sizeof("[object Object]") -1;
+			buffer = malloc(length + 1);
+			BUG_ON_NULL(buffer);
+			memcpy(buffer, object, length);
+			buffer[length] = '\0';
+		}
+		break;
+	}
+	*len = length;
+	return buffer;
 }
 
 LIBOBJECT_API char* objectToString(Object* this)
@@ -279,6 +377,7 @@ LIBOBJECT_API char* objectToString(Object* this)
 		break;
 		case IS_OBJECT:
 		case IS_PAIR:
+		case IS_POINTER:
 		case IS_FUNCTION: {
 			const char* object = "[object Object]";
 			size_t length = sizeof("[object Object]") -1;
@@ -321,6 +420,16 @@ static Object* newObject(ObjectType type)
 	O_MRKD(object) = 0;
 
 	return object;
+}
+
+LIBOBJECT_API Object *newPointer(void *value)
+{
+	Object* o = newObject(IS_POINTER);
+	if(o == NULL)
+		return NULL;
+	
+	O_PTVAL(o) = value;
+	return o;
 }
 
 LIBOBJECT_API Object* newPair(Object* first, Object* second)
@@ -434,6 +543,10 @@ LIBOBJECT_API Object* copyObject(Object* o)
 	if(o == NULL) return NULL;
 	Object* ret;
 	switch(O_TYPE(o)) {
+		case IS_POINTER:
+			ret = newPointer(O_PTVAL(o));
+			O_MRKD(ret) = O_MRKD(o);
+		break;
 		case IS_FUNCTION:
 			ret = newFunction(O_FVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
@@ -1093,6 +1206,9 @@ LIBOBJECT_API void objectEcho(Object* object)
 		case IS_FUNCTION:
 			fprintf(stdout, "[Object Function]\n");
 		break;
+		case IS_POINTER:
+			fprintf(stdout, "[Object <%p>]\n", (void *)(O_PTVAL(object)));
+		break;
 		default:
 			fprintf(stdout, "[Object Object]");
 		break;
@@ -1116,6 +1232,13 @@ LIBOBJECT_API void objectDump(Object* object, Object* last, size_t indent)
 	size_t i;
 	
 	switch(O_TYPE(object)) {
+		case IS_POINTER:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_POINTER));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)O_PTVAL(object));
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break; 
 		case IS_NULL:
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_NULL));
 			fprintf(stdout, "(");
@@ -1233,6 +1356,13 @@ LIBOBJECT_API void objectDumpEx(Object* object, Object* last, size_t indent)
 	size_t i;
 	
 	switch(O_TYPE(object)) {
+		case IS_POINTER:
+			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_POINTER));
+			fprintf(stdout, "(");
+			fprintf(stdout, "%p", (void *)O_PTVAL(object));
+			fprintf(stdout, ")");
+			fprintf(stdout, "\n");
+		break;
 		case IS_FUNCTION:
 			fprintf(stdout, "%s", O_PRETTY_TYPE(IS_FUNCTION));
 			fprintf(stdout, "(");
@@ -1351,6 +1481,7 @@ LIBOBJECT_API void objectSafeDestroy(Object* current, Object* last)
 		case IS_BOOL:
 		case IS_NULL:
 		case IS_FUNCTION:
+		case IS_POINTER:
 			free(current);
 		break;
 		case IS_PAIR:
