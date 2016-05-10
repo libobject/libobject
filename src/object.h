@@ -150,9 +150,12 @@ extern LIBOBJECT_API Object*     newStringFromSequence(const char*, size_t);
 extern LIBOBJECT_API Object*     newStringFromSubstr(Object*, size_t, size_t);
 extern LIBOBJECT_API Object*     newFunction(void*);
 extern LIBOBJECT_API Object*     newArray(size_t);
+extern LIBOBJECT_API size_t      arrayPushEx(Object*, Object*);
+extern LIBOBJECT_API Object*     arrayGetEx(Object* object, size_t);
 extern LIBOBJECT_API size_t      arrayPush(Object*, Object*);
 extern LIBOBJECT_API Object*     arrayGet(Object* object, size_t);
 extern LIBOBJECT_API size_t      arraySize(Object*);
+
 extern LIBOBJECT_API uint32_t    stringHash(const char* source, size_t length);
 extern LIBOBJECT_API Object*     stringSplit(const char*, char);
 extern LIBOBJECT_API void        objectEcho(Object*);

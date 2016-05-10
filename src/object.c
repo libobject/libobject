@@ -1114,6 +1114,28 @@ static int arrayResize(Array* array)
 	return 1;
 }
 
+LIBOBJECT_API size_t arrayPushEx(Object* object, Object* value)
+{
+	BUG_ON_NULL(object);
+	
+	if(O_TYPE(object) != IS_ARRAY) {
+		fprintf(get_debug_fp(), "%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
+		return 0;		
+	}
+	size_t retval = O_AVAL(object)->nextIndex;
+	if(O_AVAL(object)->capacity == O_AVAL(object)->size) {
+		if(!arrayResize(O_AVAL(object))) {
+			return 0;
+		}
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value;
+		O_AVAL(object)->size++;
+	} else {
+		O_AVAL(object)->table[O_AVAL(object)->nextIndex++] = value;
+		O_AVAL(object)->size++;
+	}
+	return retval;
+}
+
 LIBOBJECT_API size_t arrayPush(Object* object, Object* value)
 {
 	BUG_ON_NULL(object);
@@ -1163,6 +1185,18 @@ LIBOBJECT_API Object* arrayGet(Object* object, size_t index)
 	}
 
 	return copyObject(arrayRealGet(O_AVAL(object), index));
+}
+
+LIBOBJECT_API Object* arrayGetEx(Object* object, size_t index)
+{
+	BUG_ON_NULL(object);
+
+	if(O_TYPE(object) != IS_ARRAY) {
+		fprintf(get_debug_fp(), "%s(): Object type is not an instance of Array, got %d\n", __func__, O_TYPE(object));
+		return NULL;		
+	}
+
+	return arrayRealGet(O_AVAL(object), index);
 }
 
 LIBOBJECT_API size_t arraySize(Object* object)
