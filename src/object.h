@@ -121,6 +121,7 @@ extern LIBOBJECT_API char*       objectToString(Object*);
 extern LIBOBJECT_API int         objectValueTypeCompare(Object*, Object*);
 extern LIBOBJECT_API int         objectValueCompare(Object*, Object*);
 extern LIBOBJECT_API int         objectValueIsLessThan(Object *, Object *);
+extern LIBOBJECT_API int         objectValueIsGreaterThan(Object *, Object *);
 extern LIBOBJECT_API Object*     newNumberFromCharArray(const char*);
 extern LIBOBJECT_API Object*     newPointer(void *);
 extern LIBOBJECT_API Object*     newPair(Object*, Object*);

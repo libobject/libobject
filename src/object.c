@@ -167,6 +167,40 @@ LIBOBJECT_API int objectValueIsLessThan(Object* left, Object* right)
 	}
 }
 
+LIBOBJECT_API int objectValueIsGreaterThan(Object* left, Object* right)
+{
+	GUARDED_REQUIRE(left,  NULL, 0);
+	GUARDED_REQUIRE(right, NULL, 0);
+
+	if(O_TYPE(left) != O_TYPE(right)) {
+		return 0;
+	} else {
+		switch(O_TYPE(left)) {
+			case IS_POINTER:
+				return ((uintptr_t)O_PTVAL(left)) > ((uintptr_t)O_PTVAL(right));
+			break;
+			case IS_NULL:
+				return 0;
+			break;
+			case IS_BOOL:
+				return O_BVAL(left) > O_BVAL(right);
+			break;
+			case IS_LONG:
+				return O_LVAL(left) > O_LVAL(right);
+			break;
+			case IS_DOUBLE:
+				return O_DVAL(left) > O_DVAL(right);
+			break;
+			case IS_STRING:
+				return strcmp(O_SVAL(left)->value, O_SVAL(right)->value) > 0;	
+			break;
+			default:
+				return 0;
+			break;	
+		}
+	}
+}
+
 LIBOBJECT_API int objectValueCompare(Object* left, Object* right)
 {
 	GUARDED_REQUIRE(left,  NULL, 0);
