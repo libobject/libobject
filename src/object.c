@@ -998,7 +998,7 @@ LIBOBJECT_API Object* stringCat(Object *o1, Object *o2)
 	memcpy(buffer, s1->value, s1->length);
 	memcpy(buffer + s1->length, s2->value, s2->length);
 
-	buffer[len] = '\0';
+	buffer[len - 1] = '\0';
 
 	Object *retval = newString(buffer);
 
