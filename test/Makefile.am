@@ -20,6 +20,7 @@ noinst_PROGRAMS = \
 	stringCat      		\
 	libObjectVersion \
 	newPointer	\
+	map \
 	$(NULL)
 
 check_PROGRAMS = \
@@ -38,6 +39,7 @@ check_PROGRAMS = \
 	objectValueIsLessThan   \
 	libObjectVersion \
 	newPointer \
+	map \
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
