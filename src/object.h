@@ -85,8 +85,10 @@ typedef struct Pair {
 } Pair;
 
 struct Object {
-	ObjectType	type;
-	int		marked;
+	ObjectType	 type;
+	int			 marked;
+	unsigned int refcount;
+	unsigned int flags;
 	union {
 		long		nullValue;
 		long		boolValue;
@@ -103,6 +105,8 @@ struct Object {
 
 #define O_TYPE(o) (o)->type
 #define O_MRKD(o) (o)->marked
+#define O_REFCNT(o) (o)->refcount
+#define O_FLG(o) (o)->flags
 #define O_NVAL(o) (o)->value.nullValue
 #define O_BVAL(o) (o)->value.boolValue
 #define O_LVAL(o) (o)->value.longValue
@@ -165,6 +169,7 @@ extern LIBOBJECT_API void        objectDumpEx(Object*, Object*, size_t);
 extern LIBOBJECT_API void        objectSafeDestroy(Object*, Object*);
 extern LIBOBJECT_API Object*     copyObject(Object*);
 extern LIBOBJECT_API char*       objectToJson(Object*, int pretty, size_t* length);
+extern LIBOBJECT_API void        object_print_stats(Object *);
 
 #define objectDestroy(o) objectSafeDestroy(o, NULL)
 
