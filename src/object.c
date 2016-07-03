@@ -452,6 +452,8 @@ static Object* newObject(ObjectType type)
 
 	O_TYPE(object) = type;	
 	O_MRKD(object) = 0;
+	O_REFCNT(object) = 1;
+	O_FLG(object) = 0;
 
 	return object;
 }
@@ -759,6 +761,12 @@ LIBOBJECT_API void mapDelete(Object* object, const char* pkey)
 	free(key);
 }
 
+LIBOBJECT_API void object_print_stats(Object *o) {
+	BUG_ON_NULL(o);
+	fprintf(stderr, "<%p>: type=%s, refcount=%u\n",
+		(void *)o, O_PRETTY_TYPE(O_TYPE(o)), O_REFCNT(o));
+}
+
 LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 {
 	BUG_ON_NULL(map);
@@ -775,6 +783,7 @@ LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 	}
 	
 	Object* value_copy = value;
+	O_REFCNT(value_copy)++;
 
 	String* keyObject = newStringInstance(key);
 	uint32_t hash = stringHash(keyObject->value, keyObject->length);
@@ -788,6 +797,7 @@ LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 			Object* oldValue = bucket->value;
 			/* free the old value */
 			objectSafeDestroy(oldValue, NULL);
+
 			bucket->value = value_copy;		
 			/* not used if it exists already */
 			free(keyObject->value);
@@ -1384,7 +1394,7 @@ LIBOBJECT_API void objectDump(Object* object, Object* last, size_t indent)
 				if(b != NULL) {
 					Bucket* bb = b;
 					while(bb != NULL) {	
-						fprintf(stdout, "\t");
+						fprintf(stdout, "  ");
 						fprintf(stdout, "%s", 
 							bb->key->value);
 						fprintf(stdout, ": ");	
