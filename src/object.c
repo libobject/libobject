@@ -796,7 +796,7 @@ LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 		{
 			Object* oldValue = bucket->value;
 			/* free the old value */
-			objectSafeDestroy(oldValue, NULL);
+			//objectSafeDestroy(oldValue, NULL);
 
 			bucket->value = value_copy;		
 			/* not used if it exists already */
