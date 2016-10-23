@@ -112,6 +112,22 @@ static FILE* get_debug_fp(void)
 	return debug_fp;
 }
 
+LIBOBJECT_API char *objectTypeStr(Object *o)
+{
+	BUG_ON_NULL(o);
+
+	if(O_TYPE(o) < (sizeof(ObjectPrettyTypeLiteral) / sizeof(ObjectPrettyTypeLiteral[0]))) {
+		const char *str = ObjectPrettyTypeLiteral[(unsigned int)O_TYPE(o)];
+		size_t len = strlen(str);
+		char *buffer = malloc(len + 1);
+		BUG_ON_NULL(buffer);
+		memcpy(buffer, str, len);
+		buffer[len] = '\0';
+		return buffer;
+	}
+	return NULL;
+}
+
 LIBOBJECT_API int setDebuggingOutFile(FILE* fp)
 {
 	if(!fp)
@@ -582,41 +598,50 @@ LIBOBJECT_API Object* copyObject(Object* o)
 		case IS_POINTER:
 			ret = newPointer(O_PTVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_FUNCTION:
 			ret = newFunction(O_FVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_PAIR:
 			ret = newPair(O_PVAL(o)->first, O_PVAL(o)->second);
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_NULL:
 			ret = newNull();
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_BOOL:
 			ret = newBool(O_BVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_LONG: 
 			ret = newLong(O_LVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_DOUBLE:
 			ret = newDouble(O_DVAL(o));
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		break;
 		case IS_STRING: {
 			String* str = O_SVAL(o);
 			ret = newString(str->value);
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 		}
 		break;
 		case IS_ARRAY: {
 			size_t i;
 			ret = newArray(O_AVAL(o)->capacity);
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 			for(i = 0; i < O_AVAL(o)->size; i++) {
 				Object* value = arrayRealGet(O_AVAL(o), i);
 				arrayPush(ret, value);
@@ -627,6 +652,7 @@ LIBOBJECT_API Object* copyObject(Object* o)
 			uint32_t i;
 			ret = newMap(O_MVAL(o)->capacity);
 			O_MRKD(ret) = O_MRKD(o);
+			O_FLG(ret) = O_FLG(o);
 			for(i = 0; i < O_MVAL(o)->capacity; i++) {
 				Bucket* b = mapGetBucket(o, i);
 				while(b != NULL) {
@@ -853,7 +879,7 @@ LIBOBJECT_API uint32_t mapInsert(Object* map, const char* key, Object* value)
 		{
 			Object* oldValue = bucket->value;
 			/* free the old value */
-			objectSafeDestroy(oldValue, NULL);
+			//objectSafeDestroy(oldValue, NULL);
 			bucket->value = value_copy;		
 			/* not used if it exists already */
 			free(keyObject->value);

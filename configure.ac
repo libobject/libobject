@@ -1,8 +1,15 @@
-AC_INIT([libobject], [4.3.0], [bug-automake@gnu.org])
+dnl Start with version information of ‘0:0:0’ for each libtool library.
+dnl Update the version information only immediately before a public release of your software. More frequent updates are unnecessary, and only guarantee that the dnl current interface number gets larger faster.
+dnl If the library source code has changed at all since the last update, then increment revision (‘c:r:a’ becomes ‘c:r+1:a’).
+dnl If any interfaces have been added, removed, or changed since the last update, increment current, and set revision to 0.
+dnl If any interfaces have been added since the last public release, then increment age.
+dnl If any interfaces have been removed or changed since the last public release, then set age to 0.
+
+AC_INIT([libobject], [5.1.0], [bug-automake@gnu.org])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([disable-static])
 AC_SUBST([LIBTOOL_DEPS])
-LIB_OBJECT_VERSION=4:3:0
+LIB_OBJECT_VERSION=5:1:0
 AC_SUBST(LIB_OBJECT_VERSION)
 AC_PROG_CC
 AC_PROG_CC_C99

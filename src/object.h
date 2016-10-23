@@ -118,6 +118,7 @@ struct Object {
 #define O_PVAL(o) (o)->value.pairValue
 #define O_PTVAL(o) (o)->value.pointerValue
 
+extern LIBOBJECT_API char        *objectTypeStr(Object *);
 extern LIBOBJECT_API int         setDebuggingOutFile(FILE*);
 extern LIBOBJECT_API const char* libObjectVersion(void);
 extern LIBOBJECT_API char*       objectToStringLength(Object*, size_t *);

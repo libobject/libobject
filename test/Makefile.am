@@ -21,6 +21,7 @@ noinst_PROGRAMS = \
 	libObjectVersion \
 	newPointer	\
 	map \
+	objectTypeStr \
 	$(NULL)
 
 check_PROGRAMS = \
@@ -40,6 +41,7 @@ check_PROGRAMS = \
 	libObjectVersion \
 	newPointer \
 	map \
+	objectTypeStr \
 	$(NULL)
 
 TESTS = $(check_PROGRAMS)
