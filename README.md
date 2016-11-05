@@ -56,3 +56,33 @@ This will install the binary into `/usr/local/lib`, and the header file `object.
 
 # API Reference
 [httup://libobject.github.io](http://libobject.github.io)
+
+# Using the object memory manager
+
+The object memory mananger is a reference count of all allocated objects.
+
+```c
+#include <object.h>
+#include <object_mm.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+
+  ObjectMMNode *manager = NULL;
+  Object *map = ObjectMM_Push(&manager, newMap(2));
+
+  int i;
+  for(i = 0; i < 25; i++) {
+    Object *node = ObjectMM_Push(&manager, newLong((long)i));
+    char *key = objectToString(node);
+    mapInsert(map, key, node);
+    free(key);
+  }
+
+  ObjectMM_Free(&manager);
+
+  return 0;
+}
+```
+
