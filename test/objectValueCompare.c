@@ -19,9 +19,8 @@ static void test_objectValueCompare(void)
 
 	expect(!objectValueCompare(value1, value3));
 
-	expect(!objectValueCompare(value3, value4));
+	expect(objectValueCompare(value3, value4) == 0);
 
-	expect(objectValueCompare(value3, value3));
 
 	expect(!objectValueCompare(value5, value6));
 
