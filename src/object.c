@@ -165,7 +165,7 @@ LIBOBJECT_API int objectValueIsLessThan(Object* left, Object* right)
 				return 0;
 			break;
 			case IS_BOOL:
-				return O_BVAL(left) < O_BVAL(right);
+				return 0;
 			break;
 			case IS_LONG:
 				return O_LVAL(left) < O_LVAL(right);
@@ -199,8 +199,8 @@ LIBOBJECT_API int objectValueIsGreaterThan(Object* left, Object* right)
 				return 0;
 			break;
 			case IS_BOOL:
-				return O_BVAL(left) > O_BVAL(right);
-			break;
+			  return 0;
+      break;
 			case IS_LONG:
 				return O_LVAL(left) > O_LVAL(right);
 			break;
@@ -233,8 +233,8 @@ LIBOBJECT_API int objectValueCompare(Object* left, Object* right)
 				return 1;
 			break;
 			case IS_BOOL:
-				return O_BVAL(left) == O_BVAL(right);
-			break;
+			  return 0;
+      break;
 			case IS_LONG:
 				return O_LVAL(left) == O_LVAL(right);
 			break;
