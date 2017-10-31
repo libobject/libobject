@@ -5,11 +5,11 @@ dnl If any interfaces have been added, removed, or changed since the last update
 dnl If any interfaces have been added since the last public release, then increment age.
 dnl If any interfaces have been removed or changed since the last public release, then set age to 0.
 
-AC_INIT([libobject], [5.1.0], [bug-automake@gnu.org])
+AC_INIT([libobject], [5.2.0], [bug-automake@gnu.org])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT([disable-static])
 AC_SUBST([LIBTOOL_DEPS])
-LIB_OBJECT_VERSION=5:1:0
+LIB_OBJECT_VERSION=5:2:0
 AC_SUBST(LIB_OBJECT_VERSION)
 AC_PROG_CC
 AC_PROG_CC_C99

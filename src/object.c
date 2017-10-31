@@ -809,8 +809,6 @@ LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 	}
 	
 	Object* value_copy = value;
-	O_REFCNT(value_copy)++;
-
 	String* keyObject = newStringInstance(key);
 	uint32_t hash = stringHash(keyObject->value, keyObject->length);
 	uint32_t bucket_index = (hash % O_MVAL(map)->capacity);
@@ -820,7 +818,6 @@ LIBOBJECT_API uint32_t mapInsertEx(Object* map, const char* key, Object* value)
 			(keyObject->length == bucket->key->length) &&
 			((memcmp(bucket->key->value, keyObject->value, bucket->key->length)) == 0))
 		{
-			Object* oldValue = bucket->value;
 			/* free the old value */
 			//objectSafeDestroy(oldValue, NULL);
 
@@ -877,7 +874,6 @@ LIBOBJECT_API uint32_t mapInsert(Object* map, const char* key, Object* value)
 			(keyObject->length == bucket->key->length) &&
 			((memcmp(bucket->key->value, keyObject->value, bucket->key->length)) == 0))
 		{
-			Object* oldValue = bucket->value;
 			/* free the old value */
 			//objectSafeDestroy(oldValue, NULL);
 			bucket->value = value_copy;		
